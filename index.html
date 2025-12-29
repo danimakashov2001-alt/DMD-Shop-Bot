@@ -162,7 +162,7 @@ photos:[
 {
 name:"Зип худи No Faith Studio boxy crop fit",
 price:4100,
-status:"В пути",
+status:"В наличии",
 short:"Y2K / Opium стиль",
 description:"Эксклюзивная модель No Faith Studio. Boxy crop fit, укороченная длина. Хлопковый материал, унисекс. Цвет как на фото. Стиль y2k и opium.",
 photos:[
@@ -192,10 +192,10 @@ const catalog=document.getElementById("catalog");
 const modal=document.getElementById("modal");
 const slider=document.getElementById("slider");
 const modalBody=document.getElementById("modalBody");
-    products.forEach(p=>{
-  const card=document.createElement("div");
-  card.className="card";
-  card.innerHTML=
+products.forEach(p=>{
+    const card=document.createElement("div");
+    card.className="card";
+    card.innerHTML=`
     <img src="${p.photos[0]}">
     <div class="card-body">
       <h3>${p.name}</h3>
@@ -203,19 +203,19 @@ const modalBody=document.getElementById("modalBody");
       <div class="price">${p.price} ₽</div>
       <div class="status">${p.status}</div>
     </div>
-  ;
+  `;
   card.onclick=()=>openModal(p);
   catalog.appendChild(card);
 });
 
 function openModal(p){
   slider.innerHTML=p.photos.map(i=><img src="${i}">).join("");
-  modalBody.innerHTML=
+  modalBody.innerHTML=`
     <h3>${p.name}</h3>
     <p>${p.description}</p>
     <p><b>Цена:</b> ${p.price} ₽</p>
     <p><b>Статус:</b> ${p.status}</p>
-  ;
+  `;
   modal.style.display="flex";
 }
 
