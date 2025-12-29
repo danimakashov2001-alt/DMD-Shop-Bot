@@ -24,6 +24,7 @@ body{
   display:flex;
 }
 
+/* Sidebar */
 .sidebar{
   width:180px;
   background:#f0e6d8;
@@ -45,6 +46,17 @@ body{
   position: relative;
 }
 
+/* Убираем выделение на мобильных устройствах */
+.category,
+.category-name,
+.subcategory-list li {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
 .sidebar li:hover{
   color:var(--accent);
 }
@@ -63,6 +75,7 @@ body{
   font-weight: bold;
 }
 
+/* Catalog */
 .catalog-container{
   flex:1;
   padding:14px;
@@ -206,7 +219,6 @@ body{
     <div class="close" onclick="closeModal()">Закрыть</div>
   </div>
 </div>
-
 <script>
 // Товары с подкатегориями
 const products=[
