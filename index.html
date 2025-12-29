@@ -159,13 +159,13 @@ body{
 <div class="sidebar">
   <h3>Категории</h3>
   <ul id="categories">
-    <li class="category">Головные уборы
+    <li class="category"><span class="category-name">Головные уборы</span>
       <ul class="subcategory-list">
         <li data-subcategory="hats">Шапки</li>
         <li data-subcategory="caps">Кепки</li>
       </ul>
     </li>
-    <li class="category">Верх
+    <li class="category"><span class="category-name">Верх</span>
       <ul class="subcategory-list">
         <li data-subcategory="zip_hoodies">Зип Худи</li>
         <li data-subcategory="sweatshirts">Свитшоты</li>
@@ -173,14 +173,14 @@ body{
         <li data-subcategory="tshirts">Футболки</li>
       </ul>
     </li>
-    <li class="category">Низ
+    <li class="category"><span class="category-name">Низ</span>
       <ul class="subcategory-list">
         <li data-subcategory="jeans">Джинсы</li>
         <li data-subcategory="shorts">Шорты</li>
         <li data-subcategory="pants">Брюки</li>
       </ul>
     </li>
-    <li class="category">Обувь
+    <li class="category"><span class="category-name">Обувь</span>
       <ul class="subcategory-list">
         <li data-subcategory="sneakers">Кроссовки</li>
         <li data-subcategory="shoes">Туфли</li>
@@ -211,7 +211,7 @@ price:4300,
 status:"В наличии",
 short:"Плотный хлопок, тёплый флис",
 description:"Параметры модели: 185/70, размер L. Очень качественная зип худи. Держит форму, не деформируется. Brushed-флис создаёт эффект термобелья. Состав: 80% хлопок / 20% полиэстер. Цвет: серый.",
-    subcategory:"zip_hoodies",
+subcategory:"zip_hoodies",
 photos:[
 "https://iili.io/fVQvE5F.jpg",
 "https://iili.io/fVQU5WG.jpg",
@@ -290,7 +290,7 @@ function showProducts(subcat){
 
 // Модалка
 function openModal(p){
-  slider.innerHTML = p.photos.map(i => <img src="${i}">).join("");
+  slider.innerHTML = p.photos.map(i => `<img src="${i}">`).join("");
   modalBody.innerHTML = `
     <h3>${p.name}</h3>
     <p>${p.description}</p>
@@ -304,11 +304,12 @@ function closeModal(){
   modal.style.display="none";
 }
 
-// Раскрытие категорий
-document.querySelectorAll('.category').forEach(cat => {
-  cat.addEventListener('click', e => {
+// Раскрытие категорий по клику на текст
+document.querySelectorAll('.category-name').forEach(span => {
+  span.addEventListener('click', e => {
     e.stopPropagation();
-    cat.classList.toggle('active');
+    const li = span.parentElement;
+    li.classList.toggle('active');
   });
 });
 
@@ -316,8 +317,7 @@ document.querySelectorAll('.category').forEach(cat => {
 document.querySelectorAll('[data-subcategory]').forEach(el=>{
   el.addEventListener('click', e=>{
     e.stopPropagation();
-    const subcat = el.dataset.subcategory;
-    showProducts(subcat);
+    showProducts(el.dataset.subcategory);
   });
 });
 </script>
