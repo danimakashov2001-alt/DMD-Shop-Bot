@@ -58,6 +58,11 @@ body{
   display:block;
 }
 
+.category-name.active {
+  color: var(--accent);
+  font-weight: bold;
+}
+
 .catalog-container{
   flex:1;
   padding:14px;
@@ -308,8 +313,15 @@ function closeModal(){
 document.querySelectorAll('.category-name').forEach(span => {
   span.addEventListener('click', e => {
     e.stopPropagation();
+
+    // закрыть все другие категории
+    document.querySelectorAll('.category').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.category-name').forEach(s => s.classList.remove('active'));
+
+    // открыть текущую категорию
     const li = span.parentElement;
     li.classList.toggle('active');
+    span.classList.toggle('active');
   });
 });
 
@@ -318,12 +330,17 @@ document.querySelectorAll('[data-subcategory]').forEach(el=>{
   el.addEventListener('click', e=>{
     e.stopPropagation();
     showProducts(el.dataset.subcategory);
+
+    // убираем выделение категорий
+    document.querySelectorAll('.category').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.category-name').forEach(s => s.classList.remove('active'));
   });
 });
 </script>
 
 </body>
 </html>
+
 
 
 
