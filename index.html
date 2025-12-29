@@ -2,81 +2,212 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Каталог</title>
+  <title>DMD Shop</title>
 
+  <!-- Telegram API -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
+    :root {
+      --bg: var(--tg-theme-bg-color);
+      --card: var(--tg-theme-secondary-bg-color);
+      --text: var(--tg-theme-text-color);
+      --button: var(--tg-theme-button-color);
+      --button-text: var(--tg-theme-button-text-color);
+    }
+
     body {
       margin: 0;
       padding: 16px;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--tg-theme-bg-color);
-      color: var(--tg-theme-text-color);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    h2 {
+      margin-bottom: 16px;
     }
 
     .product {
-      background: var(--tg-theme-secondary-bg-color);
-      border-radius: 14px;
-      padding: 14px;
-      margin-bottom: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,.08);
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
     }
 
     .photos {
       display: flex;
-      overflow-x: auto;
       gap: 10px;
-      margin-bottom: 10px;
+      overflow-x: auto;
+      margin-bottom: 12px;
     }
 
     .photos img {
-      height: 140px;
-      border-radius: 12px;
+      height: 150px;
+      border-radius: 14px;
       cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .name {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .description {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+    }
+
+    .status {
+      font-weight: 600;
+      margin-bottom: 4px;
     }
 
     .price {
       font-size: 18px;
       font-weight: 700;
-      margin-top: 6px;
     }
 
-    .status {
-      font-weight: 600;
-      opacity: .8;
-    }
-
-    button {
+    .close-btn {
+      margin-top: 14px;
       width: 100%;
-      margin-top: 10px;
       padding: 12px;
-      border-radius: 12px;
+      border-radius: 14px;
       border: none;
-      background: var(--tg-theme-button-color);
-      color: var(--tg-theme-button-text-color);
+      background: var(--button);
+      color: var(--button-text);
       font-size: 16px;
+    }
+
+    /* ===== MODAL ===== */
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    .modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 12px;
+    }
+
+    .nav {
+      position: absolute;
+      top: 50%;
+      font-size: 36px;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .nav.left { left: 16px; }
+    .nav.right { right: 16px; }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 28px;
+      color: white;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
 <h2>🛍 Каталог</h2>
+<div id="products"></div>
 
-<div class="product">
-  <div class="photos">
-    <img src="https://iili.io/fVQvE5F.jpg" alt="photo">
-    <img src="https://iili.io/fVQU5WG.jpg" alt="photo">
-  </div>
-
-  <strong>Зип худи Zara Type</strong>
-  <p>ОЧЕНЬ качественная зип худи, держит форму, тёплый флисовый подклад.</p>
-
-  <div class="status">В наличии</div>
-  <div class="price">4300 ₽</div>
-
-  <button onclick="Telegram.WebApp.close()">Закрыть</button>
+<!-- FULLSCREEN GALLERY -->
+<div class="modal" id="modal">
+  <div class="modal-close" onclick="closeModal()">✕</div>
+  <div class="nav left" onclick="prev()">‹</div>
+  <img id="modal-img" alt="product">
+  <div class="nav right" onclick="next()">›</div>
 </div>
+
+<script>
+Telegram.WebApp.ready();
+
+const products = [
+  {
+    name: "Зип худи Zara Type бланковое crop fit (серый)",
+    price: 4300,
+    status: "В наличии",
+    description: "Параметры модели: 185/70, размер L. ОЧЕНЬ качественная зип худи, держит форму, тёплый флисовый подклад. Состав: 80% хлопок / 20% полиэстер. Цвет: серый.",
+    photos: [
+      "https://iili.io/fVQvE5F.jpg",
+      "https://iili.io/fVQU5WG.jpg",
+      "https://iili.io/fVQUMbe.webp",
+      "https://iili.io/fVQUv5P.webp"
+    ]
+  },
+  {
+    name: "Зип худи No Faith Studio boxy crop fit",
+    price: 4100,
+    status: "В наличии",
+    description: "Эксклюзивная модель в стиле Y2K / opium. Укороченный силуэт, хлопковый материал, унисекс.",
+    photos: [
+      "https://iili.io/fWlXmhu.jpg",
+      "https://iili.io/fVQ4Pqb.webp",
+      "https://iili.io/fVQ6zEG.webp"
+    ]
+  }
+];
+
+const root = document.getElementById("products");
+
+let currentPhotos = [];
+let currentIndex = 0;
+
+products.forEach(p => {
+  const div = document.createElement("div");
+  div.className = "product";
+
+  div.innerHTML = `
+    <div class="photos">
+      ${p.photos.map((url,i)=>`<img src="${url}" alt="photo" onclick="openModal(${JSON.stringify(p.photos)},${i})">`).join("")}
+    </div>
+    <div class="name">${p.name}</div>
+    <div class="description">${p.description}</div>
+    <div class="status">Статус: ${p.status}</div>
+    <div class="price">${p.price} ₽</div>
+    <button class="close-btn" onclick="Telegram.WebApp.close()">Закрыть</button>
+  `;
+  root.appendChild(div);
+});
+
+function openModal(photos,index){
+  currentPhotos = photos;
+  currentIndex = index;
+  document.getElementById("modal-img").src = photos[index];
+  document.getElementById("modal").style.display = "flex";
+}
+
+function closeModal(){
+  document.getElementById("modal").style.display = "none";
+}
+
+function next(){
+  currentIndex = (currentIndex + 1) % currentPhotos.length;
+  document.getElementById("modal-img").src = currentPhotos[currentIndex];
+}
+
+function prev(){
+  currentIndex = (currentIndex - 1 + currentPhotos.length) % currentPhotos.length;
+  document.getElementById("modal-img").src = currentPhotos[currentIndex];
+}
+</script>
 
 </body>
 </html>
