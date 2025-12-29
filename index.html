@@ -1,324 +1,231 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>DMD Shop</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Каталог</title>
 
-  <!-- Telegram API -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:#f6efe8;
+  --card:#ffffff;
+  --accent:#c49a6c;
+  --text:#2f2a26;
+  --muted:#7a6f66;
+}
 
-  <style>
-    :root {
-      --bg: var(--tg-theme-bg-color);
-      --card: var(--tg-theme-secondary-bg-color);
-      --text: var(--tg-theme-text-color);
-      --button: var(--tg-theme-button-color);
-      --button-text: var(--tg-theme-button-text-color);
-    }
+*{box-sizing:border-box}
 
-    body {
-      margin: 0;
-      padding: 16px;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,Arial;
+  background:var(--bg);
+  color:var(--text);
+}
 
-    h2 {
-      margin-bottom: 16px;
-    }
+h2{
+  text-align:center;
+  margin:16px 0;
+}
 
-    .product {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 20px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-    }
+.catalog{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:14px;
+  padding:14px;
+}
 
-    .photos {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      margin-bottom: 12px;
-    }
+.card{
+  background:var(--card);
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:0 6px 18px rgba(0,0,0,.08);
+  cursor:pointer;
+  transition:.2s;
+}
 
-    .photos img {
-      height: 150px;
-      border-radius: 14px;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
+.card:hover{transform:translateY(-3px)}
 
-    .name {
-      font-size: 17px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
+.card img{
+  width:100%;
+  height:200px;
+  object-fit:cover;
+}
 
-    .description {
-      font-size: 14px;
-      opacity: 0.9;
-      margin-bottom: 8px;
-    }
+.card-body{
+  padding:10px;
+}
 
-    .status {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
+.card h3{
+  font-size:14px;
+  margin:0 0 6px;
+}
 
-    .price {
-      font-size: 18px;
-      font-weight: 700;
-    }
+.short{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
 
-    .close-btn {
-      margin-top: 14px;
-      width: 100%;
-      padding: 12px;
-      border-radius: 14px;
-      border: none;
-      background: var(--button);
-      color: var(--button-text);
-      font-size: 16px;
-    }
+.price{font-weight:bold}
+.status{
+  font-size:12px;
+  color:var(--accent);
+}
 
-    /* ===== MODAL (FULLSCREEN VIEWER) ===== */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.95);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-    }
+/* MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.5);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:10;
+}
 
-    .modal.open {
-      display: flex;
-    }
+.modal-content{
+  background:var(--card);
+  width:92%;
+  max-height:90vh;
+  border-radius:18px;
+  overflow:auto;
+}
 
-    .modal-content {
-      position: relative;
-      width: min(100vw, 1100px);
-      height: min(100vh, 700px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+.slider{
+  display:flex;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+}
 
-    .modal-img {
-      max-width: 100%;
-      max-height: 100%;
-      border-radius: 12px;
-      box-shadow: 0 8px 40px rgba(0,0,0,.5);
-      user-select: none;
-    }
+.slider img{
+  min-width:100%;
+  height:300px;
+  object-fit:cover;
+  scroll-snap-align:start;
+}
 
-    .nav {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 48px;
-      color: white;
-      cursor: pointer;
-      user-select: none;
-      padding: 6px 8px;
-      border-radius: 8px;
-      background: rgba(0,0,0,.25);
-    }
+.modal-body{
+  padding:14px;
+  font-size:14px;
+}
 
-    .nav.left { left: 16px; }
-    .nav.right { right: 16px; }
-
-    .modal-close {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      font-size: 28px;
-      color: white;
-      cursor: pointer;
-      background: rgba(0,0,0,.4);
-      border-radius: 8px;
-      padding: 6px 10px;
-    }
-
-    .caption-bar {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 8px 12px;
-      color: #fff;
-      background: linear-gradient(to top, rgba(0,0,0,.8), rgba(0,0,0,.0));
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
-    }
-
-    .gesture-area {
-      position: absolute;
-      inset: 0;
-      /* скрыто чтобы не мешать кликам; слушаем свайпы через этот слой */
-    }
-  </style>
+.close{
+  text-align:center;
+  padding:12px;
+  color:var(--accent);
+  font-weight:bold;
+  cursor:pointer;
+}
+</style>
 </head>
+
 <body>
 
 <h2>🛍 Каталог</h2>
-<div id="products"></div>
+<div class="catalog" id="catalog"></div>
 
-<!-- FULLSCREEN GALLERY (модал) -->
-<div class="modal" id="modal" aria-hidden="true">
-  <button class="modal-close" id="modalClose" aria-label="Закрыть просмотр">✕</button>
-  <div class="modal-content" id="modalContent">
-    <div class="nav left" id="prevBtn" aria-label="Предыдущее фото">‹</div>
-    <img id="modal-img" class="modal-img" alt="product">
-    <div class="nav right" id="nextBtn" aria-label="Следующее фото">›</div>
-    <div class="caption-bar" id="captionBar">
-      <span id="captionText"></span>
-      <span id="counterText"></span>
-    </div>
-    <div class="gesture-area" id="gestureArea" aria-hidden="true"></div>
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <div class="slider" id="slider"></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="close" onclick="closeModal()">Закрыть</div>
   </div>
 </div>
 
 <script>
-Telegram.WebApp.ready();
-
-const products = [
-  {
-    name: "Зип худи Zara Type бланковое crop fit (серый)",
-    price: 4300,
-    status: "В наличии",
-    description: "Параметры модели: 185/70, размер L. ОЧЕНЬ качественная зип худи, держит форму, тёплый флисовый подклад. Состав: 80% хлопок / 20% полиэстер. Цвет: серый.",
-    photos: [
-      "https://iili.io/fVQvE5F.jpg",
-      "https://iili.io/fVQU5WG.jpg",
-      "https://iili.io/fVQUMbe.webp",
-      "https://iili.io/fVQUv5P.webp"
-    ]
-  },
-  {
-    name: "Зип худи No Faith Studio boxy crop fit",
-    price: 4100,
-    status: "В наличии",
-    description: "Эксклюзивная модель в стиле Y2K / opium. Укороченный силуэт, хлопковый материал, унисекс.",
-    photos: [
-      "https://iili.io/fVQ4XXn.webp",
-      "https://iili.io/fVQ4Pqb.webp",
-      "https://iili.io/fVQ6zEG.webp"
-    ]
-  }
+const products=[
+{
+name:"Зип худи Zara Type crop fit (серый)",
+price:4300,
+status:"В наличии",
+short:"Плотный хлопок, тёплый флис",
+description:"Параметры модели: 185/70, размер L. Очень качественная зип худи. Держит форму, не деформируется. Brushed-флис создаёт эффект термобелья. Состав: 80% хлопок / 20% полиэстер. Цвет: серый.",
+photos:[
+"https://iili.io/fVQvE5F.jpg",
+"https://iili.io/fVQU5WG.jpg",
+"https://iili.io/fVQUMbe.webp"
+]
+},
+{
+name:"Зип худи Zara Type crop fit (чёрный)",
+price:4300,
+status:"В наличии",
+short:"Минимализм, премиум пошив",
+description:"Актуальный крой crop fit. Плотная ткань, качественный пошив. Отлично держит форму. Состав: 80% хлопок / 20% полиэстер. Цвет: чёрный.",
+photos:[
+"https://iili.io/fVQ6E4j.webp",
+"https://iili.io/fVQ6ba4.webp",
+"https://iili.io/fVQPF6b.webp"
+]
+},
+{
+name:"Зип худи No Faith Studio boxy crop fit",
+price:4100,
+status:"В пути",
+short:"Y2K / Opium стиль",
+description:"Эксклюзивная модель No Faith Studio. Boxy crop fit, укороченная длина. Хлопковый материал, унисекс. Цвет как на фото. Стиль y2k и opium.",
+photos:[
+"https://iili.io/fVQ4XXn.webp",
+"https://iili.io/fVQ4Pqb.webp",
+"https://iili.io/fVQ6zEG.webp"
+]
+},
+{
+name:"Лонгслив Derschutze crop fit",
+price:3890,
+status:"В наличии",
+short:"Эксклюзив, вышивка",
+description:"Единственный размер M. Свободный крой с укороченным силуэтом. Высококачественная вышивка на спине. Состав: 97% хлопок / 3% эластан. Единственный экземпляр в РФ.",
+photos:[
+"https://iili.io/fVQgdrl.webp",
+"https://iili.io/fVQgbaV.webp",
+"https://iili.io/fVQrMMb.webp",
+"https://iili.io/fVQrkDF.webp",
+"https://iili.io/fVQ4JJ2.webp",
+"https://iili.io/fVQ4I5B.webp"
+]
+}
 ];
 
-// Дефолт: последняя запись невалидная в вашем массиве в процессе, поэтому оборачиваем по-другому.
-// Ваш исходный файл имел три блока товара; если нужно, можно прямо принять массив как есть.
-
-const root = document.getElementById("products");
-
-let currentPhotos = [];
-let currentIndex = 0;
-let currentProductId = null; // индекс товара в массиве
-
-function renderProducts() {
-  // если у вас данные в реальном виде, адаптируйте проход по ним
-  products.forEach((p, idx) => {
-    const div = document.createElement("div");
-    div.className = "product";
-
-    div.innerHTML = `
-      <div class="photos">
-        ${p.photos.map((url,i)=>`<img src="${url}" alt="photo" onclick="openModal(${idx}, ${i})">`).join("")}
-      </div>
-      <div class="name">${p.name}</div>
-      <div class="description">${p.description}</div>
-      <div class="status">Статус: ${p.status}</div>
+const catalog=document.getElementById("catalog");
+const modal=document.getElementById("modal");
+const slider=document.getElementById("slider");
+const modalBody=document.getElementById("modalBody");
+    products.forEach(p=>{
+  const card=document.createElement("div");
+  card.className="card";
+  card.innerHTML=
+    <img src="${p.photos[0]}">
+    <div class="card-body">
+      <h3>${p.name}</h3>
+      <div class="short">${p.short}</div>
       <div class="price">${p.price} ₽</div>
-      <button class="close-btn" onclick="Telegram.WebApp.close()">Закрыть</button>
-    `;
-    root.appendChild(div);
-  });
+      <div class="status">${p.status}</div>
+    </div>
+  ;
+  card.onclick=()=>openModal(p);
+  catalog.appendChild(card);
+});
+
+function openModal(p){
+  slider.innerHTML=p.photos.map(i=><img src="${i}">).join("");
+  modalBody.innerHTML=
+    <h3>${p.name}</h3>
+    <p>${p.description}</p>
+    <p><b>Цена:</b> ${p.price} ₽</p>
+    <p><b>Статус:</b> ${p.status}</p>
+  ;
+  modal.style.display="flex";
 }
 
-renderProducts();
-
-// Открыть модал для товара с фото под индексом
-function openModal(productIndex, photoIndex){
-  currentProductId = productIndex;
-  currentPhotos = products[productIndex].photos;
-  currentIndex = photoIndex;
-  document.getElementById("modal-img").src = currentPhotos[currentIndex];
-  document.getElementById("captionText").textContent = `${products[productIndex].name}`;
-  document.getElementById("counterText").textContent = `${currentIndex + 1} / ${currentPhotos.length}`;
-  document.getElementById("modal").classList.add("open");
-  document.getElementById("modal").setAttribute("aria-hidden", "false");
-
-  // чтобы ловить клавиатуру
-  document.addEventListener('keydown', onKeyDown);
-}
-
-// Закрыть модал
 function closeModal(){
-  document.getElementById("modal").classList.remove("open");
-  document.getElementById("modal").setAttribute("aria-hidden", "true");
-  document.removeEventListener('keydown', onKeyDown);
-  // возвращаем фокус в список товаров, если нужен
-  // document.querySelector('.product').focus();
+  modal.style.display="none";
 }
-
-// Перемещаться по фото
-function next(){
-  if (!currentPhotos.length) return;
-  currentIndex = (currentIndex + 1) % currentPhotos.length;
-  document.getElementById("modal-img").src = currentPhotos[currentIndex];
-  updateCounter();
-}
-
-function prev(){
-  if (!currentPhotos.length) return;
-  currentIndex = (currentIndex - 1 + currentPhotos.length) % currentPhotos.length;
-  document.getElementById("modal-img").src = currentPhotos[currentIndex];
-  updateCounter();
-}
-
-function updateCounter(){
-  document.getElementById("counterText").textContent = `${currentIndex + 1} / ${currentPhotos.length}`;
-}
-
-// Keyboard support
-function onKeyDown(e){
-  if (e.key === 'Escape') closeModal();
-  if (e.key === 'ArrowLeft') prev();
-  if (e.key === 'ArrowRight') next();
-}
-
-// Навигация по кнопкам
-document.getElementById("prevBtn").addEventListener('click', prev);
-document.getElementById("nextBtn").addEventListener('click', next);
-document.getElementById("modalClose").addEventListener('click', closeModal);
-
-// Свайп-обработчик
-let startX = 0;
-let isDown = false;
-const gestureArea = document.getElementById('gestureArea');
-gestureArea.addEventListener('pointerdown', (e) => {
-  isDown = true;
-  startX = e.clientX;
-});
-gestureArea.addEventListener('pointerup', (e) => {
-  if (!isDown) return;
-  const dx = e.clientX - startX;
-  if (dx > 40) prev();
-  if (dx < -40) next();
-  isDown = false;
-});
-gestureArea.addEventListener('pointercancel', () => { isDown = false; });
-
 </script>
 
 </body>
 </html>
+
 
 
