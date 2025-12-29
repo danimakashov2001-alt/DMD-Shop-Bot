@@ -209,8 +209,8 @@ products.forEach(p=>{
 });
 
 function openModal(p){
-  slider.innerHTML = p.photos.map(i => <img src="${i}">).join("");
-  modalBody.innerHTML = `
+  slider.innerHTML = p.photos.map(i =>`<img src="${i}">`).join("");
+  modalBody.innerHTML =`
     <h3>${p.name}</h3>
     <p>${p.description}</p>
     <p><b>Цена:</b> ${p.price} ₽</p>
@@ -226,6 +226,7 @@ function closeModal(){
 
 </body>
 </html>
+
 
 
 
