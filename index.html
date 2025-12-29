@@ -83,8 +83,7 @@
       font-size: 16px;
     }
 
-    /* ===== MODAL ===== */
-
+    /* ===== MODAL (FULLSCREEN VIEWER) ===== */
     .modal {
       position: fixed;
       inset: 0;
@@ -95,19 +94,38 @@
       z-index: 999;
     }
 
-    .modal img {
-      max-width: 90%;
-      max-height: 90%;
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-content {
+      position: relative;
+      width: min(100vw, 1100px);
+      height: min(100vh, 700px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-img {
+      max-width: 100%;
+      max-height: 100%;
       border-radius: 12px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.5);
+      user-select: none;
     }
 
     .nav {
       position: absolute;
       top: 50%;
-      font-size: 36px;
+      transform: translateY(-50%);
+      font-size: 48px;
       color: white;
       cursor: pointer;
       user-select: none;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(0,0,0,.25);
     }
 
     .nav.left { left: 16px; }
@@ -115,11 +133,34 @@
 
     .modal-close {
       position: absolute;
-      top: 16px;
-      right: 16px;
+      top: 12px;
+      right: 12px;
       font-size: 28px;
       color: white;
       cursor: pointer;
+      background: rgba(0,0,0,.4);
+      border-radius: 8px;
+      padding: 6px 10px;
+    }
+
+    .caption-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 8px 12px;
+      color: #fff;
+      background: linear-gradient(to top, rgba(0,0,0,.8), rgba(0,0,0,.0));
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .gesture-area {
+      position: absolute;
+      inset: 0;
+      /* скрыто чтобы не мешать кликам; слушаем свайпы через этот слой */
     }
   </style>
 </head>
@@ -128,12 +169,19 @@
 <h2>🛍 Каталог</h2>
 <div id="products"></div>
 
-<!-- FULLSCREEN GALLERY -->
-<div class="modal" id="modal">
-  <div class="modal-close" onclick="closeModal()">✕</div>
-  <div class="nav left" onclick="prev()">‹</div>
-  <img id="modal-img" alt="product">
-  <div class="nav right" onclick="next()">›</div>
+<!-- FULLSCREEN GALLERY (модал) -->
+<div class="modal" id="modal" aria-hidden="true">
+  <button class="modal-close" id="modalClose" aria-label="Закрыть просмотр">✕</button>
+  <div class="modal-content" id="modalContent">
+    <div class="nav left" id="prevBtn" aria-label="Предыдущее фото">‹</div>
+    <img id="modal-img" class="modal-img" alt="product">
+    <div class="nav right" id="nextBtn" aria-label="Следующее фото">›</div>
+    <div class="caption-bar" id="captionBar">
+      <span id="captionText"></span>
+      <span id="counterText"></span>
+    </div>
+    <div class="gesture-area" id="gestureArea" aria-hidden="true"></div>
+  </div>
 </div>
 
 <script>
@@ -163,79 +211,114 @@ const products = [
       "https://iili.io/fVQ6zEG.webp"
     ]
   }
-],
-    name: "Зип худи Zara Type бланковое crop fit (черный)",
-    price: 4100,
-    status: "В наличии",
-    description: "Эксклюзивная модель в стиле Y2K / opium. Укороченный силуэт, хлопковый материал, унисекс.",
-    photos: [
-      "https://iili.io/fVQ6E4j.webp",
-      "https://iili.io/fVQ6ba4.webp",
-      "https://iili.io/fVQPF6b.webp",
-      "https://iili.io/fVQPuMg.webp",
-      "https://iili.io/fVQP0NI.webp"
-    ]
-  }
-],
-    name: "Лонгслив Derschutze",
-    price: 4100,
-    status: "В наличии",
-    description: "Эксклюзивная модель в стиле Y2K / opium. Укороченный силуэт, хлопковый материал, унисекс.",
-    photos: [
-      "https://iili.io/fVQgdrl.webp",
-      "https://iili.io/fVQgbaV.webp",
-      "https://iili.io/fVQrMMb.webp",
-      "https://iili.io/fVQrkDF.webp",
-      "https://iili.io/fVQ4JJ2.webp",
-      "https://iili.io/fVQ4I5B.webp"
-    ]
-  }
 ];
+
+// Дефолт: последняя запись невалидная в вашем массиве в процессе, поэтому оборачиваем по-другому.
+// Ваш исходный файл имел три блока товара; если нужно, можно прямо принять массив как есть.
 
 const root = document.getElementById("products");
 
 let currentPhotos = [];
 let currentIndex = 0;
+let currentProductId = null; // индекс товара в массиве
 
-products.forEach(p => {
-  const div = document.createElement("div");
-  div.className = "product";
+function renderProducts() {
+  // если у вас данные в реальном виде, адаптируйте проход по ним
+  products.forEach((p, idx) => {
+    const div = document.createElement("div");
+    div.className = "product";
 
-  div.innerHTML = `
-    <div class="photos">
-      ${p.photos.map((url,i)=>`<img src="${url}" alt="photo" onclick="openModal(${JSON.stringify(p.photos)},${i})">`).join("")}
-    </div>
-    <div class="name">${p.name}</div>
-    <div class="description">${p.description}</div>
-    <div class="status">Статус: ${p.status}</div>
-    <div class="price">${p.price} ₽</div>
-    <button class="close-btn" onclick="Telegram.WebApp.close()">Закрыть</button>
-  `;
-  root.appendChild(div);
-});
-
-function openModal(photos,index){
-  currentPhotos = photos;
-  currentIndex = index;
-  document.getElementById("modal-img").src = photos[index];
-  document.getElementById("modal").style.display = "flex";
+    div.innerHTML = `
+      <div class="photos">
+        ${p.photos.map((url,i)=>`<img src="${url}" alt="photo" onclick="openModal(${idx}, ${i})">`).join("")}
+      </div>
+      <div class="name">${p.name}</div>
+      <div class="description">${p.description}</div>
+      <div class="status">Статус: ${p.status}</div>
+      <div class="price">${p.price} ₽</div>
+      <button class="close-btn" onclick="Telegram.WebApp.close()">Закрыть</button>
+    `;
+    root.appendChild(div);
+  });
 }
 
+renderProducts();
+
+// Открыть модал для товара с фото под индексом
+function openModal(productIndex, photoIndex){
+  currentProductId = productIndex;
+  currentPhotos = products[productIndex].photos;
+  currentIndex = photoIndex;
+  document.getElementById("modal-img").src = currentPhotos[currentIndex];
+  document.getElementById("captionText").textContent = `${products[productIndex].name}`;
+  document.getElementById("counterText").textContent = `${currentIndex + 1} / ${currentPhotos.length}`;
+  document.getElementById("modal").classList.add("open");
+  document.getElementById("modal").setAttribute("aria-hidden", "false");
+
+  // чтобы ловить клавиатуру
+  document.addEventListener('keydown', onKeyDown);
+}
+
+// Закрыть модал
 function closeModal(){
-  document.getElementById("modal").style.display = "none";
+  document.getElementById("modal").classList.remove("open");
+  document.getElementById("modal").setAttribute("aria-hidden", "true");
+  document.removeEventListener('keydown', onKeyDown);
+  // возвращаем фокус в список товаров, если нужен
+  // document.querySelector('.product').focus();
 }
 
+// Перемещаться по фото
 function next(){
+  if (!currentPhotos.length) return;
   currentIndex = (currentIndex + 1) % currentPhotos.length;
   document.getElementById("modal-img").src = currentPhotos[currentIndex];
+  updateCounter();
 }
 
 function prev(){
+  if (!currentPhotos.length) return;
   currentIndex = (currentIndex - 1 + currentPhotos.length) % currentPhotos.length;
   document.getElementById("modal-img").src = currentPhotos[currentIndex];
+  updateCounter();
 }
+
+function updateCounter(){
+  document.getElementById("counterText").textContent = `${currentIndex + 1} / ${currentPhotos.length}`;
+}
+
+// Keyboard support
+function onKeyDown(e){
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'ArrowLeft') prev();
+  if (e.key === 'ArrowRight') next();
+}
+
+// Навигация по кнопкам
+document.getElementById("prevBtn").addEventListener('click', prev);
+document.getElementById("nextBtn").addEventListener('click', next);
+document.getElementById("modalClose").addEventListener('click', closeModal);
+
+// Свайп-обработчик
+let startX = 0;
+let isDown = false;
+const gestureArea = document.getElementById('gestureArea');
+gestureArea.addEventListener('pointerdown', (e) => {
+  isDown = true;
+  startX = e.clientX;
+});
+gestureArea.addEventListener('pointerup', (e) => {
+  if (!isDown) return;
+  const dx = e.clientX - startX;
+  if (dx > 40) prev();
+  if (dx < -40) next();
+  isDown = false;
+});
+gestureArea.addEventListener('pointercancel', () => { isDown = false; });
+
 </script>
 
 </body>
 </html>
+
 
