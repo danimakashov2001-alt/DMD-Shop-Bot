@@ -2,48 +2,108 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-
-<!-- ВАЖНО для Telegram и мобильных -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
 <title>Каталог</title>
 
-<!-- Telegram WebApp API -->
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
 <style>
-body{
-  font-family: Arial, sans-serif;
-  padding: 16px;
-  margin: 0;
-  background: #ffffff;
-  color: #000000;
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+    background: #f5f5f7;
+    padding: 16px;
 }
 
-h2{
-  margin-top: 0;
+h2 {
+    text-align: center;
+    margin-bottom: 24px;
 }
 
-.product{
-  border:1px solid #ccc;
-  margin-bottom:20px;
-  padding:12px;
-  border-radius:12px;
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 16px;
 }
 
-img{
-  width:100px;
-  margin-right:5px;
-  margin-top:5px;
-  border-radius:8px;
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    cursor: pointer;
 }
 
-.status{
-  font-weight:bold;
+.card img {
+    width: 100%;
+    border-radius: 12px;
 }
-.price{
-  font-weight:bold;
-  font-size:18px;
+
+.name {
+    font-weight: 600;
+    margin: 8px 0 4px;
+}
+
+.short-desc {
+    font-size: 14px;
+    color: #555;
+}
+
+.price {
+    font-weight: bold;
+    margin-top: 6px;
+}
+
+.status {
+    font-size: 14px;
+}
+
+.in {
+    color: green;
+}
+
+.way {
+    color: orange;
+}
+
+/* Modal */
+#modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 420px;
+    width: 100%;
+    padding: 16px;
+}
+
+.modal-content img {
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+
+.modal-name {
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.modal-desc {
+    font-size: 14px;
+    color: #444;
+    margin: 10px 0;
+}
+
+.close {
+    text-align: center;
+    margin-top: 12px;
+    font-weight: bold;
+    cursor: pointer;
 }
 </style>
 </head>
@@ -51,94 +111,96 @@ img{
 <body>
 
 <h2>🛍 Каталог товаров</h2>
-<div id="products"></div>
+<div class="grid" id="products"></div>
+
+<div id="modal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <img id="modal-img" src="" alt="Фото товара">
+        <div class="modal-name" id="modal-name"></div>
+        <div class="modal-desc" id="modal-desc"></div>
+        <div class="price" id="modal-price"></div>
+        <div class="status" id="modal-status"></div>
+        <div class="close">Закрыть</div>
+    </div>
+</div>
 
 <script>
-/* ===== ИНИЦИАЛИЗАЦИЯ TELEGRAM MINI APP ===== */
-const tg = window.Telegram.WebApp;
-
-// Сообщаем Telegram, что приложение готово
-tg.ready();
-
-// Раскрываем mini app на весь экран
-tg.expand();
-
-// (необязательно, но желательно)
-tg.setHeaderColor('#ffffff');
-tg.setBackgroundColor('#ffffff');
-
-/* ===== ДАННЫЕ ТОВАРОВ ===== */
 const products = [
-  {
-    name:"Зип худи Zara Type бланковое crop fit (серый)",
-    price:4300,
-    status:"В наличии",
-    description:"Параметры модели: 185/70, размер на фото L. Цена не из воздуха, ОЧЕНЬ КАЧЕСТВЕННАЯ зип худи! С актуальным силуэтом и актуальными свойствами из-за материалов. Худи прекрасно держит форму, не тянется и не деформируется после стирок. Теплый флисовый подклад внутри кофты мягкий, brushed-подклад, который создает эффект термобелья. Состав: 80% хлопок / 20% полиэстер. Цвет: серый",
-    photos:[
-      "https://iili.io/fVQvE5F.jpg",
-      "https://iili.io/fVQU5WG.jpg",
-      "https://iili.io/fVQUMbe.webp",
-      "https://iili.io/fVQUv5P.webp"
-    ]
-  },
-  {
-    name:"Зип худи Zara Type бланковое crop fit (чёрный)",
-    price:4300,
-    status:"В наличии",
-    description:"Параметры модели: 185/70, размер на фото L. Цена не из воздуха, ОЧЕНЬ КАЧЕСТВЕННАЯ зип худи! С актуальным силуэтом и актуальными свойствами из-за материалов. Худи прекрасно держит форму, не тянется и не деформируется после стирок. Теплый флисовый подклад внутри кофты мягкий, brushed-подклад, который создает эффект термобелья. Состав: 80% хлопок / 20% полиэстер. Цвет: чёрный",
-    photos:[
-      "https://iili.io/fVQ6E4j.webp",
-      "https://iili.io/fVQ6ba4.webp",
-      "https://iili.io/fVQPF6b.webp",
-      "https://iili.io/fVQPuMg.webp",
-      "https://iili.io/fVQP0NI.webp"
-    ]
-  },
-  {
-    name:"Зип худи No faith studio boxy crop fit (коричневый)",
-    price:4100,
-    status:"В наличии",
-    description:"Цвет как на главном фото. !ЭКСКЛЮЗИВ! Кроп худи в стиле y2k и opium. Укороченные в длине, оригинальная комплектация No Faith Studios, хлопковый материал, унисекс модель.",
-    photos:[
-      "https://iili.io/fWlXmhu.jpg",
-      "https://iili.io/fVQ4Pqb.webp",
-      "https://iili.io/fVQ6zEG.webp"
-    ]
-  },
-  {
-    name:"Лонгслив derschutze свободный crop fit",
-    price:3890,
-    status:"В наличии",
-    description:"Единственный размер М. Свободный крой с укороченным силуэтом. Высококачественная вышивка на спине. Состав: 97% хлопок, 3% эластан. Качественный пошив. !ЭКСКЛЮЗИВ! Это единственный лонгслив данной модели от этого бренда, представленный в РФ.",
-    photos:[
-      "https://iili.io/fVQgdrl.webp",
-      "https://iili.io/fVQgbaV.webp",
-      "https://iili.io/fVQrMMb.webp",
-      "https://iili.io/fVQrkDF.webp",
-      "https://iili.io/fVQ4JJ2.webp",
-      "https://iili.io/fVQ4I5B.webp"
-    ]
-  }
+    {
+        name: "Зип худи Zara Type crop fit (серый)",
+        price: 4300,
+        status: "В наличии",
+        short: "Качественный зип худи, плотный материал",
+        description: "Параметры модели: 185/70, размер на фото L. Цена не из воздуха — ОЧЕНЬ КАЧЕСТВЕННАЯ зип худи. С актуальным силуэтом и свойствами за счёт материалов. Худи держит форму, не тянется и не деформируется после стирок. Тёплый флисовый brushed-подклад создаёт эффект термобелья. Состав: 80% хлопок / 20% полиэстер. Цвет: серый.",
+        photos: [
+            "https://iili.io/fVQvE5F.jpg",
+            "https://iili.io/fVQU5WG.jpg"
+        ]
+    },
+    {
+        name: "Зип худи Zara Type crop fit (чёрный)",
+        price: 4300,
+        status: "В наличии",
+        short: "Кроп худи, плотный хлопок",
+        description: "Параметры модели: 185/70, размер на фото L. ОЧЕНЬ КАЧЕСТВЕННАЯ зип худи с актуальным силуэтом. Материал не тянется, сохраняет форму после стирок. Внутри тёплый brushed-флис. Состав: 80% хлопок / 20% полиэстер. Цвет: чёрный.",
+        photos: [
+            "https://iili.io/fVQ6E4j.webp",
+            "https://iili.io/fVQ6ba4.webp"
+        ]
+    },
+    {
+        name: "Зип худи No Faith Studio (коричневый)",
+        price: 4100,
+        status: "В пути",
+        short: "Эксклюзив, стиль y2k / opium",
+        description: "Цвет как на главном фото. ЭКСКЛЮЗИВ. Кроп худи в стиле y2k и opium. Укороченная длина, оригинальная комплектация No Faith Studios, хлопковый материал, унисекс модель.",
+        photos: [
+            "https://iili.io/fVQ4XXn.webp"
+        ]
+    },
+    {
+        name: "Лонгслив Derschutze crop fit",
+        price: 3890,
+        status: "В наличии",
+        short: "Свободный крой, эксклюзив",
+        description: "Единственный размер M. Свободный крой с укороченным силуэтом. Высококачественная вышивка на спине. Состав: 97% хлопок, 3% эластан. Качественный пошив. ЭКСКЛЮЗИВ — единственный лонгслив данной модели, представленный в РФ.",
+        photos: [
+            "https://iili.io/fVQgdrl.webp"
+        ]
+    }
 ];
 
-/* ===== РЕНДЕР КАТАЛОГА ===== */
 const root = document.getElementById("products");
 
 products.forEach(p => {
-  const div = document.createElement("div");
-  div.className = "product";
+    const card = document.createElement("div");
+    card.className = "card";
+    card.onclick = () => openModal(p);
 
-  div.innerHTML =
-    "<h3>" + p.name + "</h3>" +
-    "<p>" + p.description + "</p>" +
-    "<p class='status'>Статус: " + p.status + "</p>" +
-    "<p class='price'>Цена: " + p.price + " ₽</p>" +
-    p.photos.map(url => "<img src='" + url + "'>").join("");
+    card.innerHTML = `
+        <img src="${p.photos[0]}">
+        <div class="name">${p.name}</div>
+        <div class="short-desc">${p.short}</div>
+        <div class="price">${p.price} ₽</div>
+        <div class="status ${p.status === "В наличии" ? "in" : "way"}">${p.status}</div>
+    `;
 
-  root.appendChild(div);
+    root.appendChild(card);
 });
+
+function openModal(p) {
+    document.getElementById("modal-img").src = p.photos[0];
+    document.getElementById("modal-name").innerText = p.name;
+    document.getElementById("modal-desc").innerText = p.description;
+    document.getElementById("modal-price").innerText = p.price + " ₽";
+    document.getElementById("modal-status").innerText = p.status;
+    document.getElementById("modal").style.display = "flex";
+}
+
+function closeModal() {
+    document.getElementById("modal").style.display = "none";
+}
 </script>
 
 </body>
 </html>
-
