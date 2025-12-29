@@ -13,7 +13,6 @@
   --text:#2f2a26;
   --muted:#7a6f66;
 }
-
 *{box-sizing:border-box}
 
 body{
@@ -21,20 +20,42 @@ body{
   font-family:-apple-system,BlinkMacSystemFont,Arial;
   background:var(--bg);
   color:var(--text);
+  display:flex;
 }
 
-h2{
-  text-align:center;
-  margin:16px 0;
+.sidebar{
+  width:180px;
+  background:#f0e6d8;
+  padding:14px;
+}
+
+.sidebar h3{
+  margin-top:0;
+}
+
+.sidebar ul{
+  list-style:none;
+  padding-left:0;
+}
+.sidebar li{
+  cursor:pointer;
+  padding:6px 0;
+}
+
+.sidebar li:hover{
+  color:var(--accent);
+}
+
+.catalog-container{
+  flex:1;
+  padding:14px;
 }
 
 .catalog{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
   gap:14px;
-  padding:14px;
 }
-
 .card{
   background:var(--card);
   border-radius:16px;
@@ -60,7 +81,6 @@ h2{
   font-size:14px;
   margin:0 0 6px;
 }
-
 .short{
   font-size:12px;
   color:var(--muted);
@@ -83,7 +103,6 @@ h2{
   justify-content:center;
   z-index:10;
 }
-
 .modal-content{
   background:var(--card);
   width:92%;
@@ -109,7 +128,6 @@ h2{
   padding:14px;
   font-size:14px;
 }
-
 .close{
   text-align:center;
   padding:12px;
@@ -121,10 +139,43 @@ h2{
 </head>
 
 <body>
+<div class="sidebar">
+  <h3>Категории</h3>
+  <ul id="categories">
+    <li data-category="head">Головные уборы
+      <ul>
+        <li data-subcategory="hats">Шапки</li>
+        <li data-subcategory="caps">Кепки</li>
+      </ul>
+    </li>
+    <li data-category="top">Верх
+      <ul>
+        <li data-subcategory="zip_hoodies">Зип Худи</li>
+        <li data-subcategory="sweatshirts">Свитшоты</li>
+        <li data-subcategory="longsleeves">Лонгсливы</li>
+        <li data-subcategory="tshirts">Футболки</li>
+      </ul>
+    </li>
+    <li data-category="bottom">Низ
+      <ul>
+        <li data-subcategory="jeans">Джинсы</li>
+        <li data-subcategory="shorts">Шорты</li>
+        <li data-subcategory="pants">Брюки</li>
+      </ul>
+    </li>
+    <li data-category="shoes">Обувь
+      <ul>
+        <li data-subcategory="sneakers">Кроссовки</li>
+        <li data-subcategory="shoes">Туфли</li>
+      </ul>
+    </li>
+  </ul>
+</div>
 
-<h2>🛍 Каталог</h2>
-<div class="catalog" id="catalog"></div>
-
+<div class="catalog-container">
+  <h2>🛍 Каталог</h2>
+  <div class="catalog" id="catalog"></div>
+</div>
 <div class="modal" id="modal">
   <div class="modal-content">
     <div class="slider" id="slider"></div>
@@ -132,8 +183,8 @@ h2{
     <div class="close" onclick="closeModal()">Закрыть</div>
   </div>
 </div>
-
 <script>
+// Товары с подкатегориями
 const products=[
 {
 name:"Зип худи Zara Type crop fit (серый)",
@@ -141,6 +192,7 @@ price:4300,
 status:"В наличии",
 short:"Плотный хлопок, тёплый флис",
 description:"Параметры модели: 185/70, размер L. Очень качественная зип худи. Держит форму, не деформируется. Brushed-флис создаёт эффект термобелья. Состав: 80% хлопок / 20% полиэстер. Цвет: серый.",
+subcategory:"zip_hoodies",
 photos:[
 "https://iili.io/fVQvE5F.jpg",
 "https://iili.io/fVQU5WG.jpg",
@@ -153,6 +205,7 @@ price:4300,
 status:"В наличии",
 short:"Минимализм, премиум пошив",
 description:"Актуальный крой crop fit. Плотная ткань, качественный пошив. Отлично держит форму. Состав: 80% хлопок / 20% полиэстер. Цвет: чёрный.",
+subcategory:"zip_hoodies",
 photos:[
 "https://iili.io/fVQ6E4j.webp",
 "https://iili.io/fVQ6ba4.webp",
@@ -165,6 +218,20 @@ price:4100,
 status:"В наличии",
 short:"Y2K / Opium стиль",
 description:"Эксклюзивная модель No Faith Studio. Boxy crop fit, укороченная длина. Хлопковый материал, унисекс. Цвет как на фото. Стиль y2k и opium.",
+subcategory:"zip_hoodies",
+photos:[
+"https://iili.io/fVQ4XXn.webp",
+"https://iili.io/fVQ4Pqb.webp",
+"https://iili.io/fVQ6zEG.webp"
+]
+},
+{
+name:"Зип худи No Faith Studio boxy crop fit",
+price:4100,
+status:"В наличии",
+short:"Y2K / Opium стиль",
+description:"Эксклюзивная модель No Faith Studio. Boxy crop fit, укороченная длина. Хлопковый материал, унисекс. Цвет как на фото. Стиль y2k и opium.",
+subcategory:"zip_hoodies",
 photos:[
 "https://iili.io/fVQ4XXn.webp",
 "https://iili.io/fVQ4Pqb.webp",
@@ -177,6 +244,7 @@ price:3890,
 status:"В наличии",
 short:"Эксклюзив, вышивка",
 description:"Единственный размер M. Свободный крой с укороченным силуэтом. Высококачественная вышивка на спине. Состав: 97% хлопок / 3% эластан. Единственный экземпляр в РФ.",
+subcategory:"longsleeves",
 photos:[
 "https://iili.io/fVQgdrl.webp",
 "https://iili.io/fVQgbaV.webp",
@@ -187,45 +255,63 @@ photos:[
 ]
 }
 ];
-
 const catalog=document.getElementById("catalog");
 const modal=document.getElementById("modal");
 const slider=document.getElementById("slider");
 const modalBody=document.getElementById("modalBody");
-products.forEach(p=>{
+
+// Показать товары по подкатегории
+function showProducts(subcat){
+  catalog.innerHTML = "";
+  const filtered = products.filter(p => p.subcategory === subcat);
+  filtered.forEach(p=>{
     const card=document.createElement("div");
     card.className="card";
-    card.innerHTML=`
-    <img src="${p.photos[0]}">
-    <div class="card-body">
-      <h3>${p.name}</h3>
-      <div class="short">${p.short}</div>
-      <div class="price">${p.price} ₽</div>
-      <div class="status">${p.status}</div>
-    </div>
-  `;
-  card.onclick=()=>openModal(p);
-  catalog.appendChild(card);
-});
+    card.innerHTML=
+      <img src="${p.photos[0]}">
+      <div class="card-body">
+        <h3>${p.name}</h3>
+        <div class="short">${p.short}</div>
+        <div class="price">${p.price} ₽</div>
+        <div class="status">${p.status}</div>
+      </div>
+    ;
+    card.onclick=()=>openModal(p);
+    catalog.appendChild(card);
+  });
+}
 
+// Модалка
 function openModal(p){
-  slider.innerHTML = p.photos.map(i => `<img src="${i}">`).join("");
-  modalBody.innerHTML =`
+  slider.innerHTML = p.photos.map(i => <img src="${i}">).join("");
+  modalBody.innerHTML =
     <h3>${p.name}</h3>
     <p>${p.description}</p>
     <p><b>Цена:</b> ${p.price} ₽</p>
     <p><b>Статус:</b> ${p.status}</p>
-  `;
-  modal.style.display = "flex";
+  ;
+  modal.style.display="flex";
 }
 
 function closeModal(){
   modal.style.display="none";
 }
+// Обработчик клика по подкатегории
+document.querySelectorAll('[data-subcategory]').forEach(el=>{
+  el.onclick = e => {
+    e.stopPropagation(); // чтобы родительский li не срабатывал
+    const subcat = el.dataset.subcategory;
+    showProducts(subcat);
+  }
+});
+
+// Показываем по умолчанию Зип Худи
+showProducts("zip_hoodies");
 </script>
 
 </body>
 </html>
+
 
 
 
