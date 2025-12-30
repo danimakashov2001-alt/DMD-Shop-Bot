@@ -283,19 +283,30 @@ function openModal(p){
   const info=document.getElementById("modalInfo");
 
   slider.innerHTML="";
+
   p.photos.forEach(src=>{
     const slide=document.createElement("div");
     slide.className="slide";
-    slide.innerHTML=<img src="${src}">;
+
+    const img=document.createElement("img");
+    img.src=src;
+
+    slide.appendChild(img);
     slider.appendChild(slide);
-    enableZoom(slide.querySelector("img"));
+
+    enableZoom(img);
   });
 
-  info.innerHTML=`
-    <b>${p.name}</b><br>
-    ${p.description}<br><br>
-    <b>${p.price} ₽</b> • ${p.status}
-  `;
+  info.innerHTML="";
+  const title=document.createElement("b");
+  title.textContent=p.name;
+
+  info.appendChild(title);
+  info.appendChild(document.createElement("br"));
+  info.appendChild(document.createTextNode(p.description));
+  info.appendChild(document.createElement("br"));
+  info.appendChild(document.createElement("br"));
+  info.appendChild(document.createTextNode(${p.price} ₽ • ${p.status}));
 
   modal.style.display="flex";
 }
