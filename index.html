@@ -4,21 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Каталог</title>
-
 <style>
 :root{
   --accent:#c49a6c;
   --dark:#0d0d0d;
 }
-
 *{margin:0;padding:0;box-sizing:border-box}
-
 body{
   font-family:-apple-system,BlinkMacSystemFont,Arial;
   background:url("https://iili.io/fXfx3ep.jpg") center/cover fixed;
   color:#fff;
 }
-
 /* HEADER */
 header{
   height:44px;
@@ -29,9 +25,7 @@ header{
   background:rgba(15,15,15,.85);
   backdrop-filter:blur(6px);
 }
-
 header h3{font-size:16px}
-
 button{
   background:var(--accent);
   color:#fff;
@@ -40,7 +34,6 @@ button{
   border-radius:14px;
   cursor:pointer;
 }
-
 /* CATALOG */
 .catalog{
   display:grid;
@@ -48,7 +41,6 @@ button{
   gap:14px;
   padding:14px;
 }
-
 .card{
   background:#fff;
   border-radius:14px;
@@ -56,15 +48,13 @@ button{
   box-shadow:0 6px 18px rgba(0,0,0,.25);
   cursor:pointer;
 }
-
 .card img{
   width:100%;
   height:200px;
   object-fit:cover;
 }
-
 .card-body{padding:10px;font-size:14px}
-
+.status{font-size:12px;color:var(--accent)}
 /* CATEGORIES */
 #overlay{
   position:fixed;
@@ -73,7 +63,6 @@ button{
   display:none;
   z-index:20;
 }
-
 #categories{
   width:80%;
   max-width:320px;
@@ -82,10 +71,8 @@ button{
   color:#fff;
   padding:16px;
 }
-
 .category{margin-top:14px;font-weight:600}
 .subcat{margin:6px 0 6px 14px;color:#bbb;cursor:pointer}
-
 /* GALLERY */
 #gallery{
   position:fixed;
@@ -95,13 +82,11 @@ button{
   z-index:100;
   overflow:hidden;
 }
-
 .track{
   display:flex;
   height:100%;
   transition:transform .3s ease;
 }
-
 .slide{
   min-width:100%;
   height:100%;
@@ -109,8 +94,8 @@ button{
   align-items:center;
   justify-content:center;
   overflow:hidden;
+  position:relative;
 }
-
 .slide img{
   max-width:100%;
   max-height:100%;
@@ -118,7 +103,6 @@ button{
   touch-action:none;
   cursor:grab;
 }
-
 /* INFO */
 .info{
   position:absolute;
@@ -131,9 +115,7 @@ button{
   font-size:14px;
   transition:opacity .2s;
 }
-
 .hidden{opacity:0}
-
 /* INDICATOR */
 .dots{
   position:absolute;
@@ -143,16 +125,13 @@ button{
   display:flex;
   gap:6px;
 }
-
 .dot{
   width:6px;
   height:6px;
   border-radius:50%;
   background:#555;
 }
-
 .dot.active{background:#fff}
-
 /* CLOSE */
 .close{
   position:absolute;
@@ -164,7 +143,6 @@ button{
 }
 </style>
 </head>
-
 <body>
 
 <header>
@@ -247,6 +225,7 @@ photos:[
 ]
 }
 ];
+
 const catalog=document.getElementById("catalog");
 const gallery=document.getElementById("gallery");
 const track=document.getElementById("track");
@@ -255,14 +234,14 @@ const info=document.getElementById("info");
 
 let index=0, startX=0, dx=0;
 let scale=1, panX=0, panY=0;
-let imgEl=null;
+let imgEl=null, isDragging=false, lastTouchDist=0;
 
 function render(list){
   catalog.innerHTML="";
   list.forEach(p=>{
     const c=document.createElement("div");
     c.className="card";
-    c.innerHTML=`<img src="${p.photos[0]}"><div class="card-body">${p.name}</div>`;
+    c.innerHTML=`<img src="${p.photos[0]}"><div class="card-body">${p.name}<br><span class="status">${p.status}</span></div>`;
     c.onclick=()=>openGallery(p);
     catalog.appendChild(c);
   });
@@ -277,7 +256,6 @@ function openGallery(p){
     img.src=src;
     slide.appendChild(img);
     track.appendChild(slide);
-
     const dot=document.createElement("div");
     dot.className="dot "+(i===0?'active':'');
     dots.appendChild(dot);
@@ -287,78 +265,90 @@ function openGallery(p){
   imgEl.style.transform="scale(1) translate(0px,0px)";
   info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽`;
   gallery.style.display="block";
+  updateSlide();
 }
 
 // SWIPE
 track.addEventListener("touchstart",e=>{
-  startX=e.touches[0].clientX;
+  if(e.touches.length===1){
+    startX=e.touches[0].clientX;
+  }
 });
 track.addEventListener("touchmove",e=>{
-  dx=e.touches[0].clientX-startX;
-  if(scale===1){
-    track.style.transform=`translateX(${dx-index*innerWidth}px)`;
-  }else{
-    panX+=e.touches[0].clientX-startX;
-    panY+=e.touches[0].clientY-startY;
-    imgEl.style.transform=`scale(${scale}) translate(${panX/scale}px, ${panY/scale}px)`;
+  if(e.touches.length===1){
+    dx=e.touches[0].clientX-startX;
+    if(scale===1){
+      track.style.transform=`translateX(${dx-index*innerWidth}px)`;
+    }
+    startX=e.touches[0].clientX;
   }
-  startX=e.touches[0].clientX;
+  if(e.touches.length===2 && imgEl){
+    e.preventDefault();
+    const dist=Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY
+    );
+    if(!lastTouchDist) lastTouchDist=dist;
+    let newScale=scale*(dist/lastTouchDist);
+    newScale=Math.max(1,Math.min(newScale,5));
+    scale=newScale;
+    imgEl.style.transform=`scale(${scale}) translate(${panX/scale}px, ${panY/scale}px)`;
+    lastTouchDist=dist;
+  }
 });
-track.addEventListener("touchend",()=>{
+track.addEventListener("touchend",e=>{
   if(scale===1){
     if(Math.abs(dx)>50) index+=dx<0?1:-1;
     index=Math.max(0,Math.min(index,track.children.length-1));
-    track.style.transform=`translateX(${-index*innerWidth}px)`;
-    updateDots();
+    updateSlide();
   }
-  dx=0;
+  dx=0; lastTouchDist=0;
 });
 
-// PINCH ZOOM
-let pinchStart=0;
-track.addEventListener("touchmove",e=>{
-  if(e.touches.length===2){
-    e.preventDefault();
-    const dist=Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
-    );
-    if(!pinchStart) pinchStart=dist;
-    let newScale=scale*(dist/pinchStart);
-    newScale=Math.max(1,newScale);
-    scale=newScale;
-    imgEl.style.transform=`scale(${scale}) translate(${panX/scale}px, ${panY/scale}px)`;
-  } else pinchStart=0;
-});
-
-// DOUBLE TAP ZOOM
+// DOUBLE TAP / CLICK ZOOM
 let lastTap=0;
-imgEl?.addEventListener?.('touchend',()=>{
+track.addEventListener("dblclick",()=>toggleZoom());
+track.addEventListener("touchend",()=>{
   const now=Date.now();
-  if(now-lastTap<300){
-    scale=scale===1?2:1;
-    panX=panY=0;
-    imgEl.style.transform=`scale(${scale}) translate(0px,0px)`;
-  }
+  if(now-lastTap<300) toggleZoom();
   lastTap=now;
 });
-
-function updateDots(){
-  [...dots.children].forEach((d,i)=>d.classList.toggle("active",i===index));
+function toggleZoom(){
+  if(!imgEl) return;
+  if(scale===1){
+    scale=2; panX=0; panY=0;
+  } else scale=1;
+  imgEl.style.transform=`scale(${scale}) translate(0px,0px)`;
 }
 
+// MOUSE ZOOM
+track.addEventListener("wheel",e=>{
+  if(!imgEl) return;
+  e.preventDefault();
+  let delta=e.deltaY>0?-0.1:0.1;
+  scale=Math.max(1,Math.min(scale+delta,5));
+  imgEl.style.transform=`scale(${scale}) translate(${panX/scale}px,${panY/scale}px)`;
+});
+
+// INFO TOGGLE
 gallery.addEventListener("click",e=>{
   if(e.target.tagName==="IMG") info.classList.toggle("hidden");
 });
 
+// CLOSE
 function closeGallery(){gallery.style.display="none"; scale=1; panX=0; panY=0; imgEl=null}
 
+// CATEGORIES
 function openCats(){overlay.style.display="block"}
 function closeCats(){overlay.style.display="none"}
 function filter(c){render(products.filter(p=>p.subcategory===c));closeCats()}
 
+function updateSlide(){
+  track.style.transform=`translateX(${-index*innerWidth}px)`;
+  [...dots.children].forEach((d,i)=>d.classList.toggle("active",i===index));
+}
+
 render(products);
 </script>
-
 </body>
 </html>
