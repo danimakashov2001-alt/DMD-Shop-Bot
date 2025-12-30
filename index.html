@@ -2,45 +2,52 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Каталог</title>
 
 <style>
 :root{
   --accent:#c49a6c;
+  --bg-dark:#121212;
+  --card:#ffffff;
   --text:#2f2a26;
 }
 
-*{
-  box-sizing:border-box;
-  user-select:none;
-  -webkit-tap-highlight-color:transparent;
-}
+*{box-sizing:border-box;margin:0;padding:0}
 
 body{
-  margin:0;
-  font-family:Arial, sans-serif;
+  font-family:-apple-system,BlinkMacSystemFont,Arial;
   background:url("https://iili.io/fXfx3ep.jpg") center/cover fixed;
   color:var(--text);
 }
 
+/* HEADER */
 header{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:14px;
-  background:rgba(40,40,40,.75);
-  color:white;
+  padding:8px 14px;
+  background:rgba(25,25,25,.85);
+  backdrop-filter:blur(6px);
+  color:#fff;
 }
 
-button{
+header h3{
+  font-size:16px;
+  font-weight:600;
+}
+
+header button{
   border:none;
   background:var(--accent);
   color:white;
-  padding:8px 16px;
-  border-radius:20px;
+  padding:6px 14px;
+  border-radius:16px;
+  font-size:13px;
+  cursor:pointer;
 }
 
+/* CATALOG */
 .catalog{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
@@ -49,10 +56,11 @@ button{
 }
 
 .card{
-  background:white;
+  background:var(--card);
   border-radius:14px;
   overflow:hidden;
-  box-shadow:0 6px 18px rgba(0,0,0,.2);
+  box-shadow:0 6px 18px rgba(0,0,0,.25);
+  cursor:pointer;
 }
 
 .card img{
@@ -61,23 +69,47 @@ button{
   object-fit:cover;
 }
 
-.card-body{padding:10px}
-.price{font-weight:bold}
-.status{font-size:12px;color:var(--accent)}
-
-#categories{
-  display:none;
-  padding:14px;
-  background:rgba(255,255,255,.95);
+.card-body{
+  padding:10px;
 }
 
-.category{font-weight:bold;margin-top:12px}
-.subcat{padding-left:14px;margin:6px 0;cursor:pointer}
+.price{font-weight:600}
+.status{font-size:12px;color:var(--accent)}
 
+/* CATEGORIES */
+#categoryOverlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.7);
+  display:none;
+  z-index:50;
+}
+
+#categories{
+  background:#1a1a1a;
+  color:#fff;
+  width:85%;
+  max-width:320px;
+  height:100%;
+  padding:16px;
+}
+
+.category{
+  font-weight:600;
+  margin-top:14px;
+}
+
+.subcat{
+  margin:6px 0 6px 14px;
+  color:#ccc;
+  cursor:pointer;
+}
+
+/* MODAL */
 .modal{
   position:fixed;
   inset:0;
-  background:black;
+  background:#000;
   display:none;
   flex-direction:column;
   z-index:100;
@@ -88,6 +120,7 @@ button{
   display:flex;
   overflow-x:auto;
   scroll-snap-type:x mandatory;
+  touch-action:none;
 }
 
 .slide{
@@ -95,23 +128,27 @@ button{
   display:flex;
   justify-content:center;
   align-items:center;
+  scroll-snap-align:start;
 }
 
 .slide img{
   max-width:100%;
   max-height:100%;
+  transition:transform .15s;
   touch-action:none;
 }
 
 .modal-info{
-  background:white;
-  padding:14px;
+  background:#fff;
+  padding:12px;
+  font-size:14px;
 }
 
 .close{
-  color:white;
   text-align:center;
-  padding:12px;
+  padding:10px;
+  color:#fff;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -120,10 +157,19 @@ button{
 
 <header>
   <h3>🛍 Каталог</h3>
-  <button onclick="toggleCategories()">Категории</button>
+  <button onclick="openCategories()">Категории</button>
 </header>
 
-<div id="categories"></div>
+<div id="categoryOverlay" onclick="closeCategories()">
+  <div id="categories" onclick="event.stopPropagation()">
+    <div class="category">Худи</div>
+    <div class="subcat" onclick="filterCat('zip_hoodies')">Зип худи</div>
+
+    <div class="category">Футболки</div>
+    <div class="subcat" onclick="filterCat('longsleeves')">Лонгсливы</div>
+  </div>
+</div>
+
 <div class="catalog" id="catalog"></div>
 
 <div class="modal" id="modal">
@@ -133,163 +179,114 @@ button{
 </div>
 
 <script>
-// ===== ТОВАРЫ =====
-var products = [
-  {
-    name:"Зип худи Zara Type crop fit (серый)",
-    price:4300,
-    status:"В наличии",
-    description:"185/70, размер L. Плотный хлопок.",
-    subcategory:"zip_hoodies",
-    photos:[
-      "https://iili.io/fVQvE5F.jpg",
-      "https://iili.io/fVQU5WG.jpg",
-      "https://iili.io/fVQUMbe.webp"
-    ]
-  },
-  {
-    name:"Зип худи Zara Type crop fit (чёрный)",
-    price:4300,
-    status:"В наличии",
-    description:"Минимализм, премиум пошив.",
-    subcategory:"zip_hoodies",
-    photos:[
-      "https://iili.io/fVQ6E4j.webp",
-      "https://iili.io/fVQ6ba4.webp",
-      "https://iili.io/fVQPF6b.webp"
-    ]
-  },
-  {
-    name:"Зип худи No Faith Studio boxy crop fit",
-    price:4100,
-    status:"В наличии",
-    description:"Эксклюзив. Y2K / Opium стиль. Унисекс.",
-    subcategory:"zip_hoodies",
-    photos:[
-      "https://iili.io/fXB5Ctj.jpg",
-      "https://iili.io/fVQ4Pqb.webp",
-      "https://iili.io/fVQ6zEG.webp"
-    ]
-  },
-  {
-    name:"Лонгслив Derschutze crop fit",
-    price:3890,
-    status:"В наличии",
-    description:"Эксклюзив. Вышивка. Размер M.",
-    subcategory:"longsleeves",
-    photos:[
-      "https://iili.io/fVQgdrl.webp",
-      "https://iili.io/fVQgbaV.webp",
-      "https://iili.io/fVQrMMb.webp"
-    ]
-  }
+const products=[
+{
+name:"Зип худи Zara Type crop fit (серый)",
+price:4300,
+status:"В наличии",
+description:"Параметры модели: 185/70, размер L. Плотный хлопок, brushed-флис. Цвет серый.",
+subcategory:"zip_hoodies",
+photos:[
+"https://iili.io/fVQvE5F.jpg",
+"https://iili.io/fVQU5WG.jpg",
+"https://iili.io/fVQUMbe.webp",
+"https://iili.io/fVQUv5P.webp"
+]
+},
+{
+name:"Зип худи Zara Type crop fit (чёрный)",
+price:4300,
+status:"В наличии",
+description:"Минимализм, премиум пошив. Цвет чёрный.",
+subcategory:"zip_hoodies",
+photos:[
+"https://iili.io/fVQ6E4j.webp",
+"https://iili.io/fVQ6ba4.webp",
+"https://iili.io/fVQPF6b.webp",
+"https://iili.io/fVQPuMg.webp",
+"https://iili.io/fVQP0NI.webp"
+]
+},
+{
+name:"Зип худи No Faith Studio boxy crop fit",
+price:4100,
+status:"В наличии",
+description:"Эксклюзив. Y2K / Opium стиль. Унисекс.",
+subcategory:"zip_hoodies",
+photos:[
+"https://iili.io/fXB5Ctj.jpg",
+"https://iili.io/fVQ4Pqb.webp",
+"https://iili.io/fVQ6zEG.webp"
+]
+},
+{
+name:"Лонгслив Derschutze crop fit",
+price:3890,
+status:"В наличии",
+description:"Эксклюзив. Вышивка. Размер M.",
+subcategory:"longsleeves",
+photos:[
+"https://iili.io/fVQgdrl.webp",
+"https://iili.io/fVQgbaV.webp",
+"https://iili.io/fVQrMMb.webp",
+"https://iili.io/fVQrkDF.webp",
+"https://iili.io/fVQ4JJ2.webp",
+"https://iili.io/fVQ4I5B.webp"
+]
+}
 ];
 
-// ===== КАТЕГОРИИ =====
-var categoriesData = {
-  "Головные уборы":{caps:"Кепки",hats:"Шапки"},
-  "Верх":{zip_hoodies:"Зип худи",longsleeves:"Лонгсливы"},
-  "Низ":{pants:"Брюки",jeans:"Джинсы",shorts:"Шорты"},
-  "Обувь":{sneakers:"Кроссовки",shoes:"Туфли"}
+const catalog=document.getElementById("catalog");
+const modal=document.getElementById("modal");
+const slider=document.getElementById("slider");
+const modalInfo=document.getElementById("modalInfo");
+
+let scale=1, startX=0, startY=0;
+const render=(list)=>{
+  catalog.innerHTML="";
+  list.forEach(p=>{
+    const c=document.createElement("div");
+    c.className="card";
+    c.innerHTML=`
+      <img src="${p.photos[0]}">
+      <div class="card-body">
+        <div>${p.name}</div>
+        <div class="price">${p.price} ₽</div>
+        <div class="status">${p.status}</div>
+      </div>`;
+    c.onclick=()=>openModal(p);
+    catalog.appendChild(c);
+  });
 };
 
-var catalog = document.getElementById("catalog");
-var categories = document.getElementById("categories");
-
-// ===== КАТАЛОГ =====
-function renderCatalog(list){
-  catalog.innerHTML="";
-  for(var i=0;i<list.length;i++){
-    var p=list[i];
-    var card=document.createElement("div");
-    card.className="card";
-    card.onclick=(function(prod){
-      return function(){ openModal(prod); };
-    })(p);
-    var img=document.createElement("img");
-    img.src=p.photos[0];
-
-    var body=document.createElement("div");
-    body.className="card-body";
-
-    body.innerHTML="<div>"+p.name+"</div><div class='price'>"+p.price+" ₽</div><div class='status'>"+p.status+"</div>";
-
-    card.appendChild(img);
-    card.appendChild(body);
-    catalog.appendChild(card);
-  }
-}
-
-// ===== КАТЕГОРИИ =====
-function toggleCategories(){
-  if(categories.style.display==="block"){
-    categories.style.display="none";
-    catalog.style.display="grid";
-  }else{
-    categories.style.display="block";
-    catalog.style.display="none";
-  }
-}
-
-function buildCategories(){
-  categories.innerHTML="";
-  for(var cat in categoriesData){
-    var t=document.createElement("div");
-    t.className="category";
-    t.innerHTML=cat;
-    categories.appendChild(t);
-
-    for(var sub in categoriesData[cat]){
-      var s=document.createElement("div");
-      s.className="subcat";
-      s.innerHTML=categoriesData[cat][sub];
-      s.onclick=(function(sc){
-        return function(){ filterSubcat(sc); };
-      })(sub);
-      categories.appendChild(s);
-    }
-  }
-}
-
-function filterSubcat(sub){
-  var filtered=[];
-  for(var i=0;i<products.length;i++){
-    if(products[i].subcategory===sub){
-      filtered.push(products[i]);
-    }
-  }
-  categories.style.display="none";
-  catalog.style.display="grid";
-  renderCatalog(filtered);
-}
-
-// ===== MODAL =====
-function openModal(p){
-  var modal=document.getElementById("modal");
-  var slider=document.getElementById("slider");
-  var info=document.getElementById("modalInfo");
-
+const openModal=(p)=>{
   slider.innerHTML="";
-  for(var i=0;i<p.photos.length;i++){
-    var slide=document.createElement("div");
-    slide.className="slide";
-    var img=document.createElement("img");
-    img.src=p.photos[i];
-    slide.appendChild(img);
-    slider.appendChild(slide);
-  }
-
-  info.innerHTML="<b>"+p.name+"</b><br>"+p.description+"<br><br>"+p.price+" ₽ • "+p.status;
+  p.photos.forEach(src=>{
+    const s=document.createElement("div");
+    s.className="slide";
+    const img=document.createElement("img");
+    img.src=src;
+    img.ondblclick=()=>{scale=scale===1?2:1;img.style.transform=`scale(${scale})`;}
+    img.onpointerdown=e=>{startX=e.clientX;startY=e.clientY;}
+    img.onpointermove=e=>{
+      if(scale>1){
+        img.style.transform=`scale(${scale}) translate(${(e.clientX-startX)/3}px, ${(e.clientY-startY)/3}px)`;
+      }
+    };
+    s.appendChild(img);
+    slider.appendChild(s);
+  });
+  modalInfo.innerHTML=`<b>${p.name}</b><br>${p.description}<br><b>${p.price} ₽</b>`;
   modal.style.display="flex";
-}
+};
 
-function closeModal(){
-  document.getElementById("modal").style.display="none";
-}
+const closeModal=()=>{modal.style.display="none";scale=1;}
 
-// INIT
-buildCategories();
-renderCatalog(products);
+const openCategories=()=>{document.getElementById("categoryOverlay").style.display="block";}
+const closeCategories=()=>{document.getElementById("categoryOverlay").style.display="none";}
+const filterCat=(c)=>{render(products.filter(p=>p.subcategory===c));closeCategories();}
+
+render(products);
 </script>
 
 </body>
