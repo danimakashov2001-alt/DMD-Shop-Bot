@@ -19,7 +19,7 @@
 
 body{
   margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,Arial;
+  font-family:Arial, sans-serif;
   background:url("https://iili.io/fXfx3ep.jpg") center/cover fixed;
   color:var(--text);
 }
@@ -31,7 +31,6 @@ header{
   padding:14px;
   background:rgba(40,40,40,.75);
   color:white;
-  backdrop-filter:blur(6px);
 }
 
 button{
@@ -72,31 +71,9 @@ button{
   background:rgba(255,255,255,.95);
 }
 
-.category{
-  font-weight:bold;
-  margin-top:12px;
-}
+.category{font-weight:bold;margin-top:12px}
+.subcat{padding-left:14px;margin:6px 0;cursor:pointer}
 
-.subcat{
-  padding-left:14px;
-  margin:6px 0;
-  cursor:pointer;
-}
-
-.toast{
-  position:fixed;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#000;
-  color:#fff;
-  padding:10px 16px;
-  border-radius:20px;
-  display:none;
-  z-index:50;
-}
-
-/* MODAL */
 .modal{
   position:fixed;
   inset:0;
@@ -124,7 +101,6 @@ button{
   max-width:100%;
   max-height:100%;
   touch-action:none;
-  transition:transform .15s;
 }
 
 .modal-info{
@@ -150,8 +126,6 @@ button{
 <div id="categories"></div>
 <div class="catalog" id="catalog"></div>
 
-<div class="toast" id="toast">Нет товара</div>
-
 <div class="modal" id="modal">
   <div class="slider" id="slider"></div>
   <div class="modal-info" id="modalInfo"></div>
@@ -159,13 +133,13 @@ button{
 </div>
 
 <script>
-// ================= ТОВАРЫ =================
-const products = [
+// ===== ТОВАРЫ =====
+var products = [
   {
     name:"Зип худи Zara Type crop fit (серый)",
     price:4300,
     status:"В наличии",
-    description:"Параметры модели: 185/70, размер L. Плотный хлопок.",
+    description:"185/70, размер L. Плотный хлопок.",
     subcategory:"zip_hoodies",
     photos:[
       "https://iili.io/fVQvE5F.jpg",
@@ -186,6 +160,18 @@ const products = [
     ]
   },
   {
+    name:"Зип худи No Faith Studio boxy crop fit",
+    price:4100,
+    status:"В наличии",
+    description:"Эксклюзив. Y2K / Opium стиль. Унисекс.",
+    subcategory:"zip_hoodies",
+    photos:[
+      "https://iili.io/fXB5Ctj.jpg",
+      "https://iili.io/fVQ4Pqb.webp",
+      "https://iili.io/fVQ6zEG.webp"
+    ]
+  },
+  {
     name:"Лонгслив Derschutze crop fit",
     price:3890,
     status:"В наличии",
@@ -199,142 +185,106 @@ const products = [
   }
 ];
 
-// ================= КАТЕГОРИИ =================
-const categoriesData = {
+// ===== КАТЕГОРИИ =====
+var categoriesData = {
   "Головные уборы":{caps:"Кепки",hats:"Шапки"},
-  "Верх":{zip_hoodies:"Зип худи",sweatshirts:"Свитшоты",longsleeves:"Лонгсливы",tshirts:"Футболки"},
-  "Низ":{pants:"Брюки",shorts:"Шорты",jeans:"Джинсы"},
+  "Верх":{zip_hoodies:"Зип худи",longsleeves:"Лонгсливы"},
+  "Низ":{pants:"Брюки",jeans:"Джинсы",shorts:"Шорты"},
   "Обувь":{sneakers:"Кроссовки",shoes:"Туфли"}
 };
 
-const catalog = document.getElementById("catalog");
-const categories = document.getElementById("categories");
-const toast = document.getElementById("toast");
+var catalog = document.getElementById("catalog");
+var categories = document.getElementById("categories");
 
-// ================= КАТАЛОГ =================
+// ===== КАТАЛОГ =====
 function renderCatalog(list){
   catalog.innerHTML="";
-  list.forEach(p=>{
-    const card=document.createElement("div");
+  for(var i=0;i<list.length;i++){
+    var p=list[i];
+    var card=document.createElement("div");
     card.className="card";
-    card.onclick=function(){ openModal(p); };
-
-    const img=document.createElement("img");
+    card.onclick=(function(prod){
+      return function(){ openModal(prod); };
+    })(p);
+    var img=document.createElement("img");
     img.src=p.photos[0];
 
-    const body=document.createElement("div");
+    var body=document.createElement("div");
     body.className="card-body";
 
-    const name=document.createElement("div");
-    name.textContent=p.name;
-
-    const price=document.createElement("div");
-    price.className="price";
-    price.textContent=p.price+" ₽";
-
-    const status=document.createElement("div");
-    status.className="status";
-    status.textContent=p.status;
-
-    body.appendChild(name);
-    body.appendChild(price);
-    body.appendChild(status);
+    body.innerHTML="<div>"+p.name+"</div><div class='price'>"+p.price+" ₽</div><div class='status'>"+p.status+"</div>";
 
     card.appendChild(img);
     card.appendChild(body);
     catalog.appendChild(card);
-  });
+  }
 }
 
-// ================= КАТЕГОРИИ =================
+// ===== КАТЕГОРИИ =====
 function toggleCategories(){
-  const open = categories.style.display==="block";
-  categories.style.display = open ? "none" : "block";
-  catalog.style.display = open ? "grid" : "none";
+  if(categories.style.display==="block"){
+    categories.style.display="none";
+    catalog.style.display="grid";
+  }else{
+    categories.style.display="block";
+    catalog.style.display="none";
+  }
 }
 
 function buildCategories(){
   categories.innerHTML="";
-  for(const cat in categoriesData){
-    const title=document.createElement("div");
-    title.className="category";
-    title.textContent=cat;
-    categories.appendChild(title);
+  for(var cat in categoriesData){
+    var t=document.createElement("div");
+    t.className="category";
+    t.innerHTML=cat;
+    categories.appendChild(t);
 
-    for(const sub in categoriesData[cat]){
-      const sc=document.createElement("div");
-      sc.className="subcat";
-      sc.textContent=categoriesData[cat][sub];
-      sc.onclick=function(){ filterSubcat(sub); };
-      categories.appendChild(sc);
+    for(var sub in categoriesData[cat]){
+      var s=document.createElement("div");
+      s.className="subcat";
+      s.innerHTML=categoriesData[cat][sub];
+      s.onclick=(function(sc){
+        return function(){ filterSubcat(sc); };
+      })(sub);
+      categories.appendChild(s);
     }
   }
 }
 
 function filterSubcat(sub){
-  const filtered=products.filter(p=>p.subcategory===sub);
-  if(filtered.length===0){
-    toast.style.display="block";
-    setTimeout(()=>toast.style.display="none",2000);
-    return;
+  var filtered=[];
+  for(var i=0;i<products.length;i++){
+    if(products[i].subcategory===sub){
+      filtered.push(products[i]);
+    }
   }
   categories.style.display="none";
   catalog.style.display="grid";
   renderCatalog(filtered);
 }
 
-// ================= MODAL + ZOOM =================
+// ===== MODAL =====
 function openModal(p){
-  const modal=document.getElementById("modal");
-  const slider=document.getElementById("slider");
-  const info=document.getElementById("modalInfo");
+  var modal=document.getElementById("modal");
+  var slider=document.getElementById("slider");
+  var info=document.getElementById("modalInfo");
 
   slider.innerHTML="";
-  p.photos.forEach(src=>{
-    const slide=document.createElement("div");
+  for(var i=0;i<p.photos.length;i++){
+    var slide=document.createElement("div");
     slide.className="slide";
-
-    const img=document.createElement("img");
-    img.src=src;
-
+    var img=document.createElement("img");
+    img.src=p.photos[i];
     slide.appendChild(img);
     slider.appendChild(slide);
+  }
 
-    enableZoom(img);
-  });
-
-  info.textContent=p.name+" — "+p.price+" ₽";
+  info.innerHTML="<b>"+p.name+"</b><br>"+p.description+"<br><br>"+p.price+" ₽ • "+p.status;
   modal.style.display="flex";
 }
 
 function closeModal(){
   document.getElementById("modal").style.display="none";
-}
-
-function enableZoom(img){
-  let scale=1;
-  let startDist=0;
-
-  img.addEventListener("touchstart",function(e){
-    if(e.touches.length===2){
-      startDist=Math.hypot(
-        e.touches[0].pageX-e.touches[1].pageX,
-        e.touches[0].pageY-e.touches[1].pageY
-      );
-    }
-  });
-
-  img.addEventListener("touchmove",function(e){
-    if(e.touches.length===2){
-      const newDist=Math.hypot(
-        e.touches[0].pageX-e.touches[1].pageX,
-        e.touches[0].pageY-e.touches[1].pageY
-      );
-      scale=Math.min(Math.max(1,scale*(newDist/startDist)),3);
-      img.style.transform="scale("+scale+")";
-      startDist=newDist;
-    }
-  });
 }
 
 // INIT
