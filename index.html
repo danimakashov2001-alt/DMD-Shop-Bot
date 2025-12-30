@@ -323,7 +323,7 @@ function enableZoom(img){
         e.touches[0].pageY-e.touches[1].pageY
       );
       scale=Math.min(Math.max(1,scale*(newDist/startDist)),3);
-      img.style.transform=scale(${scale});
+      img.style.transform=`scale(${scale})`;
       startDist=newDist;
     }
   });
@@ -336,6 +336,7 @@ renderCatalog(products);
 
 </body>
 </html>
+
 
 
 
