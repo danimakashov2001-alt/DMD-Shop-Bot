@@ -291,11 +291,11 @@ function openModal(p){
     enableZoom(slide.querySelector("img"));
   });
 
-  info.innerHTML=
+  info.innerHTML=`
     <b>${p.name}</b><br>
     ${p.description}<br><br>
     <b>${p.price} ₽</b> • ${p.status}
-  ;
+  `;
 
   modal.style.display="flex";
 }
@@ -336,5 +336,6 @@ renderCatalog(products);
 
 </body>
 </html>
+
 
 
