@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Каталог</title>
 
 <style>
 :root{
   --accent:#c49a6c;
   --text:#2f2a26;
-  --card:#ffffff;
 }
 
 *{box-sizing:border-box}
@@ -17,61 +17,38 @@
 body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
+  background:url("https://iili.io/fXfx3ep.jpg") center/cover fixed;
   color:var(--text);
-  background:url("https://iili.io/fXfx3ep.jpg") center/cover fixed no-repeat;
 }
 
-/* HEADER */
-.header{
-  padding:14px;
+header{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  background:rgba(255,255,255,.92);
+  padding:14px;
   backdrop-filter:blur(6px);
+  background:rgba(255,255,255,.8);
 }
 
-.btn{
-  padding:8px 16px;
-  border-radius:20px;
+button{
+  border:none;
   background:var(--accent);
-  color:#fff;
-  font-weight:bold;
+  color:white;
+  padding:8px 14px;
+  border-radius:20px;
   cursor:pointer;
 }
 
-/* CATEGORIES */
-.categories{
-  display:none;
-  padding:14px;
-  background:rgba(255,255,255,.95);
-}
-
-.category{
-  margin-bottom:12px;
-}
-
-.category-title{
-  font-weight:bold;
-  margin-bottom:6px;
-}
-
-.subcat{
-  padding:4px 0;
-  cursor:pointer;
-}
-
-/* CATALOG */
 .catalog{
-  padding:14px;
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
   gap:14px;
+  padding:14px;
 }
 
 .card{
-  background:var(--card);
-  border-radius:16px;
+  background:white;
+  border-radius:14px;
   overflow:hidden;
   box-shadow:0 6px 18px rgba(0,0,0,.15);
   cursor:pointer;
@@ -87,52 +64,19 @@ body{
   padding:10px;
 }
 
-.price{
-  font-weight:bold;
-  color:var(--accent);
-}
+.price{font-weight:bold}
+.status{font-size:12px;color:var(--accent)}
 
-/* MODAL */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.55);
+#categories{
   display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:10;
+  padding:14px;
+  background:rgba(255,255,255,.9);
 }
 
-.modal-content{
-  background:#fff;
-  width:92%;
-  max-height:90vh;
-  border-radius:18px;
-  overflow:auto;
-}
+.category{margin-bottom:10px;font-weight:bold}
+.subcat{padding-left:14px;cursor:pointer;font-weight:normal}
 
-.slider{
-  display:flex;
-  overflow-x:auto;
-  scroll-snap-type:x mandatory;
-}
-
-.slider img{
-  min-width:100%;
-  height:300px;
-  object-fit:cover;
-  scroll-snap-align:start;
-}
-
-.close{
-  text-align:center;
-  padding:12px;
-  color:var(--accent);
-  font-weight:bold;
-  cursor:pointer;
-}
-
-/* TOAST */
+/* ===== уведомление ===== */
 .toast{
   position:fixed;
   bottom:20px;
@@ -140,180 +84,217 @@ body{
   transform:translateX(-50%);
   background:#000;
   color:#fff;
-  padding:10px 18px;
+  padding:10px 16px;
   border-radius:20px;
   display:none;
-  z-index:20;
+  z-index:50;
+}
+
+/* ===== FULLSCREEN ===== */
+.modal{
+  position:fixed;
+  inset:0;
+  background:black;
+  display:none;
+  flex-direction:column;
+  z-index:100;
+}
+
+.slider{
+  flex:1;
+  display:flex;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+}
+
+.slider img{
+  min-width:100%;
+  height:100%;
+  object-fit:contain;
+  scroll-snap-align:start;
+}
+
+.modal-info{
+  background:white;
+  padding:14px;
+}
+
+.close{
+  color:white;
+  text-align:center;
+  padding:12px;
+  cursor:pointer;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <div>🛍 Магазин</div>
-  <div class="btn" onclick="toggleCategories()">Категории</div>
-</div>
+<header>
+  <h3>🛍 Каталог</h3>
+  <button onclick="toggleCategories()">Категории</button>
+</header>
 
-<div class="categories" id="categories"></div>
+<div id="categories"></div>
 
 <div class="catalog" id="catalog"></div>
 
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <div class="slider" id="slider"></div>
-    <div style="padding:14px" id="modalBody"></div>
-    <div class="close" onclick="closeModal()">Закрыть</div>
-  </div>
-</div>
-
 <div class="toast" id="toast">Нет товара</div>
 
+<div class="modal" id="modal">
+  <div class="slider" id="slider"></div>
+  <div class="modal-info" id="modalInfo"></div>
+  <div class="close" onclick="closeModal()">Закрыть</div>
+</div>
+
 <script>
-// ====== ТОВАРЫ (ВСЕ ТВОИ) ======
+// ===== ТОВАРЫ =====
 const products = [
 {
-  name:"Зип худи Zara Type crop fit (серый)",
-  price:4300,
-  status:"В наличии",
-  subcategory:"zip_hoodies",
-  description:"Параметры модели: 185/70, размер L. Brushed-флис, держит форму.",
-  photos:[
-    "https://iili.io/fVQvE5F.jpg",
-    "https://iili.io/fVQU5WG.jpg",
-    "https://iili.io/fVQUMbe.webp"
-  ]
+name:"Зип худи Zara Type crop fit (серый)",
+price:4300,
+status:"В наличии",
+description:"Параметры модели: 185/70, размер L. Плотный хлопок, brushed-флис. Цвет серый.",
+subcategory:"zip_hoodies",
+photos:[
+"https://iili.io/fVQvE5F.jpg",
+"https://iili.io/fVQU5WG.jpg",
+"https://iili.io/fVQUMbe.webp"
+]
 },
 {
-  name:"Зип худи Zara Type crop fit (чёрный)",
-  price:4300,
-  status:"В наличии",
-  subcategory:"zip_hoodies",
-  description:"Crop fit, плотная ткань. Цвет: чёрный.",
-  photos:[
-    "https://iili.io/fVQ6E4j.webp",
-    "https://iili.io/fVQ6ba4.webp",
-    "https://iili.io/fVQPF6b.webp"
-  ]
+name:"Зип худи Zara Type crop fit (чёрный)",
+price:4300,
+status:"В наличии",
+description:"Минимализм, премиум пошив. Цвет чёрный.",
+subcategory:"zip_hoodies",
+photos:[
+"https://iili.io/fVQ6E4j.webp",
+"https://iili.io/fVQ6ba4.webp",
+"https://iili.io/fVQPF6b.webp"
+]
 },
 {
-  name:"Зип худи No Faith Studio boxy crop fit",
-  price:4100,
-  status:"В наличии",
-  subcategory:"zip_hoodies",
-  description:"Boxy crop fit. Y2K / Opium стиль.",
-  photos:[
-    "https://iili.io/fVQ4XXn.webp",
-    "https://iili.io/fVQ4Pqb.webp",
-    "https://iili.io/fVQ6zEG.webp"
-  ]
+name:"Зип худи No Faith Studio boxy crop fit",
+price:4100,
+status:"В наличии",
+description:"Эксклюзив. Y2K / Opium стиль. Унисекс.",
+subcategory:"zip_hoodies",
+photos:[
+"https://iili.io/fVQ4XXn.webp",
+"https://iili.io/fVQ4Pqb.webp",
+"https://iili.io/fVQ6zEG.webp"
+]
 },
 {
-  name:"Лонгслив Derschutze crop fit",
-  price:3890,
-  status:"В наличии",
-  subcategory:"longsleeves",
-  description:"Единственный размер M. Вышивка на спине.",
-  photos:[
-    "https://iili.io/fVQgdrl.webp",
-    "https://iili.io/fVQgbaV.webp",
-    "https://iili.io/fVQrMMb.webp",
-    "https://iili.io/fVQrkDF.webp",
-    "https://iili.io/fVQ4JJ2.webp",
-    "https://iili.io/fVQ4I5B.webp"
-  ]
+name:"Лонгслив Derschutze crop fit",
+price:3890,
+status:"В наличии",
+description:"Эксклюзив. Вышивка. Размер M.",
+subcategory:"longsleeves",
+photos:[
+"https://iili.io/fVQgdrl.webp",
+"https://iili.io/fVQgbaV.webp",
+"https://iili.io/fVQrMMb.webp"
+]
 }
 ];
 
-// ====== КАТЕГОРИИ (ВСЕ, ВКЛЮЧАЯ ПУСТЫЕ) ======
+// ===== КАТЕГОРИИ =====
 const categoriesData = {
-  "Головные уборы":["Шапки","Кепки"],
-  "Верх":["Зип Худи","Свитшоты","Лонгсливы","Футболки"],
-  "Низ":["Джинсы","Шорты","Брюки"],
-  "Обувь":["Кроссовки","Туфли"]
+"Верх": {
+"zip_hoodies":"Зип худи",
+"sweatshirts":"Свитшоты",
+"longsleeves":"Лонгсливы"
+},
+"Низ": {
+"pants":"Брюки",
+"shorts":"Шорты"
+}
 };
 
 const catalog = document.getElementById("catalog");
 const categories = document.getElementById("categories");
 const toast = document.getElementById("toast");
 
-// ====== КАТАЛОГ ======
+// ===== РЕНДЕР =====
 function renderCatalog(list){
-  catalog.innerHTML="";
-  list.forEach(p=>{
-    const c=document.createElement("div");
-    c.className="card";
-    c.innerHTML=`
-      <img src="${p.photos[0]}" alt="">
-      <div class="card-body">
-        <div>${p.name}</div>
-        <div class="price">${p.price} ₽</div>
-      </div>`;
-    c.onclick=()=>openModal(p);
-    catalog.appendChild(c);
-  });
+catalog.innerHTML="";
+list.forEach(p=>{
+const card=document.createElement("div");
+card.className="card";
+card.innerHTML=`
+<img src="${p.photos[0]}" alt="">
+<div class="card-body">
+<div>${p.name}</div>
+<div class="price">${p.price} ₽</div>
+<div class="status">${p.status}</div>
+</div>
+`;
+card.onclick=()=>openModal(p);
+catalog.appendChild(card);
+});
 }
 
-// по умолчанию — все товары
-renderCatalog(products);
-
-// ====== КАТЕГОРИИ ======
-for(const cat in categoriesData){
-  const block=document.createElement("div");
-  block.className="category";
-  block.innerHTML=`<div class="category-title">${cat}</div>`;
-
-  categoriesData[cat].forEach(sub=>{
-    const s=document.createElement("div");
-    s.className="subcat";
-    s.textContent=sub;
-    s.onclick=()=>{
-      const key=sub.toLowerCase();
-      const filtered=products.filter(p=>p.subcategory.includes(key));
-      if(filtered.length===0){
-        showToast();
-      }else{
-        renderCatalog(filtered);
-        toggleCategories();
-      }
-    };
-    block.appendChild(s);
-  });
-  categories.appendChild(block);
-}
-
+// ===== КАТЕГОРИИ =====
 function toggleCategories(){
-  const open = categories.style.display==="block";
-  categories.style.display = open ? "none" : "block";
-  catalog.style.display = open ? "grid" : "none";
+categories.style.display =
+categories.style.display==="block" ? "none":"block";
 }
 
 function showToast(){
-  toast.style.display="block";
-  setTimeout(()=>toast.style.display="none",3000);
+toast.style.display="block";
+setTimeout(()=>toast.style.display="none",3000);
 }
 
-// ====== MODAL ======
+function filterSubcat(sub){
+const filtered = products.filter(p=>p.subcategory===sub);
+if(filtered.length===0){showToast();return;}
+renderCatalog(filtered);
+}
+
+// ===== MODAL =====
 const modal=document.getElementById("modal");
 const slider=document.getElementById("slider");
-const modalBody=document.getElementById("modalBody");
+const modalInfo=document.getElementById("modalInfo");
 
 function openModal(p){
-  slider.innerHTML=p.photos.map(i=>`<img src="${i}" alt="">`).join("");
-  modalBody.innerHTML=`
-    <b>${p.name}</b><br><br>
-    ${p.description}<br><br>
-    <b>Цена:</b> ${p.price} ₽<br>
-    <b>Статус:</b> ${p.status}
-  `;
-  modal.style.display="flex";
+slider.innerHTML=p.photos.map(i=>`<img src="${i}" alt="">`).join("");
+modalInfo.innerHTML=`
+<h3>${p.name}</h3>
+<p>${p.description}</p>
+<p><b>Цена:</b> ${p.price} ₽</p>
+<p><b>Статус:</b> ${p.status}</p>
+`;
+modal.style.display="flex";
 }
 
 function closeModal(){
-  modal.style.display="none";
+modal.style.display="none";
 }
+
+// ===== INIT =====
+function buildCategories(){
+for(const cat in categoriesData){
+const div=document.createElement("div");
+div.className="category";
+div.textContent=cat;
+categories.appendChild(div);
+for(const sub in categoriesData[cat]){
+const s=document.createElement("div");
+s.className="subcat";
+s.textContent=categoriesData[cat][sub];
+s.onclick=()=>filterSubcat(sub);
+categories.appendChild(s);
+}
+}
+}
+
+buildCategories();
+renderCatalog(products);
 </script>
 
 </body>
 </html>
+
 
