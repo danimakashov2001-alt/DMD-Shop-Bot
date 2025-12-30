@@ -16,6 +16,7 @@
 body{
   font-family:-apple-system,BlinkMacSystemFont,Arial;
   background:url("https://iili.io/fXfx3ep.jpg") center/cover fixed;
+  color:#fff;
 }
 
 /* HEADER */
@@ -27,7 +28,6 @@ header{
   padding:0 14px;
   background:rgba(15,15,15,.85);
   backdrop-filter:blur(6px);
-  color:#fff;
 }
 
 header h3{font-size:16px}
@@ -38,6 +38,7 @@ button{
   border:none;
   padding:6px 14px;
   border-radius:14px;
+  cursor:pointer;
 }
 
 /* CATALOG */
@@ -53,6 +54,7 @@ button{
   border-radius:14px;
   overflow:hidden;
   box-shadow:0 6px 18px rgba(0,0,0,.25);
+  cursor:pointer;
 }
 
 .card img{
@@ -82,7 +84,7 @@ button{
 }
 
 .category{margin-top:14px;font-weight:600}
-.subcat{margin:6px 0 6px 14px;color:#bbb}
+.subcat{margin:6px 0 6px 14px;color:#bbb;cursor:pointer}
 
 /* GALLERY */
 #gallery{
@@ -114,6 +116,7 @@ button{
   max-height:100%;
   transition:transform .25s ease;
   touch-action:none;
+  cursor:grab;
 }
 
 /* INFO */
@@ -156,6 +159,7 @@ button{
   top:12px;
   right:16px;
   font-size:22px;
+  cursor:pointer;
   color:#fff;
 }
 </style>
@@ -243,14 +247,15 @@ photos:[
 ]
 }
 ];
-
 const catalog=document.getElementById("catalog");
 const gallery=document.getElementById("gallery");
 const track=document.getElementById("track");
 const dots=document.getElementById("dots");
 const info=document.getElementById("info");
 
-let index=0,startX=0,dx=0,scale=1,panX=0,panY=0;
+let index=0, startX=0, dx=0;
+let scale=1, panX=0, panY=0;
+let imgEl=null;
 
 function render(list){
   catalog.innerHTML="";
@@ -266,40 +271,87 @@ function render(list){
 function openGallery(p){
   track.innerHTML=""; dots.innerHTML="";
   p.photos.forEach((src,i)=>{
-    track.innerHTML+=`<div class="slide"><img src="${src}"></div>`;
-    dots.innerHTML+=`<div class="dot ${i==0?'active':''}"></div>`;
+    const slide=document.createElement("div");
+    slide.className="slide";
+    const img=document.createElement("img");
+    img.src=src;
+    slide.appendChild(img);
+    track.appendChild(slide);
+
+    const dot=document.createElement("div");
+    dot.className="dot "+(i===0?'active':'');
+    dots.appendChild(dot);
   });
+  index=0; scale=1; panX=0; panY=0;
+  imgEl=track.querySelector('img');
+  imgEl.style.transform="scale(1) translate(0px,0px)";
   info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽`;
-  index=0; scale=1; panX=panY=0;
-  update();
   gallery.style.display="block";
 }
 
-function update(){
-  track.style.transform=`translateX(${-index*innerWidth}px)`;
-  [...dots.children].forEach((d,i)=>d.classList.toggle("active",i===index));
-}
-
+// SWIPE
 track.addEventListener("touchstart",e=>{
   startX=e.touches[0].clientX;
 });
-
 track.addEventListener("touchmove",e=>{
   dx=e.touches[0].clientX-startX;
-  track.style.transform=`translateX(${dx-index*innerWidth}px)`;
+  if(scale===1){
+    track.style.transform=`translateX(${dx-index*innerWidth}px)`;
+  }else{
+    panX+=e.touches[0].clientX-startX;
+    panY+=e.touches[0].clientY-startY;
+    imgEl.style.transform=`scale(${scale}) translate(${panX/scale}px, ${panY/scale}px)`;
+  }
+  startX=e.touches[0].clientX;
+});
+track.addEventListener("touchend",()=>{
+  if(scale===1){
+    if(Math.abs(dx)>50) index+=dx<0?1:-1;
+    index=Math.max(0,Math.min(index,track.children.length-1));
+    track.style.transform=`translateX(${-index*innerWidth}px)`;
+    updateDots();
+  }
+  dx=0;
 });
 
-track.addEventListener("touchend",()=>{
-  if(Math.abs(dx)>50) index+=dx<0?1:-1;
-  index=Math.max(0,Math.min(index,track.children.length-1));
-  update(); dx=0;
+// PINCH ZOOM
+let pinchStart=0;
+track.addEventListener("touchmove",e=>{
+  if(e.touches.length===2){
+    e.preventDefault();
+    const dist=Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    if(!pinchStart) pinchStart=dist;
+    let newScale=scale*(dist/pinchStart);
+    newScale=Math.max(1,newScale);
+    scale=newScale;
+    imgEl.style.transform=`scale(${scale}) translate(${panX/scale}px, ${panY/scale}px)`;
+  } else pinchStart=0;
 });
+
+// DOUBLE TAP ZOOM
+let lastTap=0;
+imgEl?.addEventListener?.('touchend',()=>{
+  const now=Date.now();
+  if(now-lastTap<300){
+    scale=scale===1?2:1;
+    panX=panY=0;
+    imgEl.style.transform=`scale(${scale}) translate(0px,0px)`;
+  }
+  lastTap=now;
+});
+
+function updateDots(){
+  [...dots.children].forEach((d,i)=>d.classList.toggle("active",i===index));
+}
 
 gallery.addEventListener("click",e=>{
   if(e.target.tagName==="IMG") info.classList.toggle("hidden");
 });
 
-function closeGallery(){gallery.style.display="none"}
+function closeGallery(){gallery.style.display="none"; scale=1; panX=0; panY=0; imgEl=null}
 
 function openCats(){overlay.style.display="block"}
 function closeCats(){overlay.style.display="none"}
