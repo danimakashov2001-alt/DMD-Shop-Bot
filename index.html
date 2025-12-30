@@ -306,7 +306,7 @@ function openModal(p){
   info.appendChild(document.createTextNode(p.description));
   info.appendChild(document.createElement("br"));
   info.appendChild(document.createElement("br"));
-  info.appendChild(document.createTextNode(${p.price} ₽ • ${p.status}));
+  info.appendChild(document.createTextNode(${`p.price} ₽ • ${p.status}`));
 
   modal.style.display="flex";
 }
@@ -347,8 +347,3 @@ renderCatalog(products);
 
 </body>
 </html>
-
-
-
-
-
