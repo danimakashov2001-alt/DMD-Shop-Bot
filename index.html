@@ -8,8 +8,7 @@
 <style>
 :root{
   --accent:#c49a6c;
-  --dark:#0f0f0f;
-  --card:#ffffff;
+  --dark:#0d0d0d;
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
@@ -17,15 +16,15 @@
 body{
   font-family:-apple-system,BlinkMacSystemFont,Arial;
   background:url("https://iili.io/fXfx3ep.jpg") center/cover fixed;
-  color:#222;
 }
 
 /* HEADER */
 header{
+  height:44px;
   display:flex;
-  justify-content:space-between;
   align-items:center;
-  padding:8px 14px;
+  justify-content:space-between;
+  padding:0 14px;
   background:rgba(15,15,15,.85);
   backdrop-filter:blur(6px);
   color:#fff;
@@ -38,11 +37,10 @@ button{
   color:#fff;
   border:none;
   padding:6px 14px;
-  border-radius:16px;
-  cursor:pointer;
+  border-radius:14px;
 }
 
-/* CATALOG GRID */
+/* CATALOG */
 .catalog{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
@@ -55,7 +53,6 @@ button{
   border-radius:14px;
   overflow:hidden;
   box-shadow:0 6px 18px rgba(0,0,0,.25);
-  cursor:pointer;
 }
 
 .card img{
@@ -64,17 +61,13 @@ button{
   object-fit:cover;
 }
 
-.card-body{
-  padding:10px;
-}
-
-.status{font-size:12px;color:var(--accent)}
+.card-body{padding:10px;font-size:14px}
 
 /* CATEGORIES */
 #overlay{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.75);
+  background:rgba(0,0,0,.8);
   display:none;
   z-index:20;
 }
@@ -89,39 +82,42 @@ button{
 }
 
 .category{margin-top:14px;font-weight:600}
-.subcat{margin:6px 0 6px 14px;color:#bbb;cursor:pointer}
+.subcat{margin:6px 0 6px 14px;color:#bbb}
 
-/* FULLSCREEN GALLERY */
+/* GALLERY */
 #gallery{
   position:fixed;
   inset:0;
   background:#000;
   display:none;
   z-index:100;
+  overflow:hidden;
 }
 
-.gallery-track{
+.track{
   display:flex;
   height:100%;
-  width:100%;
-  touch-action:pan-y pinch-zoom;
+  transition:transform .3s ease;
 }
 
-.gallery-slide{
+.slide{
   min-width:100%;
   height:100%;
   display:flex;
   align-items:center;
   justify-content:center;
+  overflow:hidden;
 }
 
-.gallery-slide img{
+.slide img{
   max-width:100%;
   max-height:100%;
+  transition:transform .25s ease;
+  touch-action:none;
 }
 
 /* INFO */
-.gallery-info{
+.info{
   position:absolute;
   bottom:0;
   left:0;
@@ -130,15 +126,37 @@ button{
   color:#fff;
   padding:12px;
   font-size:14px;
+  transition:opacity .2s;
 }
 
+.hidden{opacity:0}
+
+/* INDICATOR */
+.dots{
+  position:absolute;
+  bottom:70px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:6px;
+}
+
+.dot{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#555;
+}
+
+.dot.active{background:#fff}
+
+/* CLOSE */
 .close{
   position:absolute;
   top:12px;
   right:16px;
+  font-size:22px;
   color:#fff;
-  font-size:20px;
-  cursor:pointer;
 }
 </style>
 </head>
@@ -147,16 +165,14 @@ button{
 
 <header>
   <h3>🛍 Каталог</h3>
-  <button onclick="openCategories()">Категории</button>
+  <button onclick="openCats()">Категории</button>
 </header>
 
-<div id="overlay" onclick="closeCategories()">
+<div id="overlay" onclick="closeCats()">
   <div id="categories" onclick="event.stopPropagation()">
-    <div class="category">Худи</div>
-    <div class="subcat" onclick="filterCat('zip_hoodies')">Зип худи</div>
-
-    <div class="category">Футболки</div>
-    <div class="subcat" onclick="filterCat('longsleeves')">Лонгсливы</div>
+    <div class="category">Верх</div>
+    <div class="subcat" onclick="filter('zip_hoodies')">Зип худи</div>
+    <div class="subcat" onclick="filter('longsleeves')">Лонгсливы</div>
   </div>
 </div>
 
@@ -165,8 +181,9 @@ button{
 <!-- GALLERY -->
 <div id="gallery">
   <div class="close" onclick="closeGallery()">✕</div>
-  <div class="gallery-track" id="track"></div>
-  <div class="gallery-info" id="info"></div>
+  <div class="track" id="track"></div>
+  <div class="dots" id="dots"></div>
+  <div class="info" id="info"></div>
 </div>
 
 <script>
@@ -228,62 +245,65 @@ photos:[
 ];
 
 const catalog=document.getElementById("catalog");
-const track=document.getElementById("track");
 const gallery=document.getElementById("gallery");
+const track=document.getElementById("track");
+const dots=document.getElementById("dots");
 const info=document.getElementById("info");
 
-let startX=0, currentX=0, index=0;
-const render=list=>{
+let index=0,startX=0,dx=0,scale=1,panX=0,panY=0;
+
+function render(list){
   catalog.innerHTML="";
   list.forEach(p=>{
     const c=document.createElement("div");
     c.className="card";
-    c.innerHTML=`
-      <img src="${p.photos[0]}">
-      <div class="card-body">
-        <div>${p.name}</div>
-        <div class="status">${p.status}</div>
-      </div>`;
+    c.innerHTML=`<img src="${p.photos[0]}"><div class="card-body">${p.name}</div>`;
     c.onclick=()=>openGallery(p);
     catalog.appendChild(c);
   });
-};
+}
 
-const openGallery=p=>{
-  track.innerHTML="";
-  p.photos.forEach(src=>{
-    const s=document.createElement("div");
-    s.className="gallery-slide";
-    s.innerHTML=`<img src="${src}">`;
-    track.appendChild(s);
+function openGallery(p){
+  track.innerHTML=""; dots.innerHTML="";
+  p.photos.forEach((src,i)=>{
+    track.innerHTML+=`<div class="slide"><img src="${src}"></div>`;
+    dots.innerHTML+=`<div class="dot ${i==0?'active':''}"></div>`;
   });
-  index=0;
-  track.style.transform="translateX(0)";
   info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽`;
+  index=0; scale=1; panX=panY=0;
+  update();
   gallery.style.display="block";
-};
+}
+
+function update(){
+  track.style.transform=`translateX(${-index*innerWidth}px)`;
+  [...dots.children].forEach((d,i)=>d.classList.toggle("active",i===index));
+}
 
 track.addEventListener("touchstart",e=>{
   startX=e.touches[0].clientX;
 });
+
 track.addEventListener("touchmove",e=>{
-  currentX=e.touches[0].clientX-startX;
-  track.style.transform=`translateX(${currentX-index*innerWidth}px)`;
+  dx=e.touches[0].clientX-startX;
+  track.style.transform=`translateX(${dx-index*innerWidth}px)`;
 });
+
 track.addEventListener("touchend",()=>{
-  if(Math.abs(currentX)>50){
-    index+=currentX<0?1:-1;
-  }
+  if(Math.abs(dx)>50) index+=dx<0?1:-1;
   index=Math.max(0,Math.min(index,track.children.length-1));
-  track.style.transform=`translateX(${-index*innerWidth}px)`;
-  currentX=0;
+  update(); dx=0;
 });
 
-const closeGallery=()=>gallery.style.display="none";
+gallery.addEventListener("click",e=>{
+  if(e.target.tagName==="IMG") info.classList.toggle("hidden");
+});
 
-const openCategories=()=>overlay.style.display="block";
-const closeCategories=()=>overlay.style.display="none";
-const filterCat=c=>{render(products.filter(p=>p.subcategory===c));closeCategories();};
+function closeGallery(){gallery.style.display="none"}
+
+function openCats(){overlay.style.display="block"}
+function closeCats(){overlay.style.display="none"}
+function filter(c){render(products.filter(p=>p.subcategory===c));closeCats()}
 
 render(products);
 </script>
