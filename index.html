@@ -35,12 +35,10 @@ body{
   background:rgba(255,255,255,.9);
   position:sticky;
   top:0;
-  z-index:5;
+  z-index:10;
 }
 
-.header h2{
-  margin:0;
-}
+.header h2{margin:0}
 
 .cat-btn{
   padding:8px 14px;
@@ -63,15 +61,11 @@ body{
   overflow:auto;
   transform:translateX(-100%);
   transition:.25s;
-  z-index:6;
+  z-index:20;
 }
 
 .sidebar.open{
   transform:translateX(0);
-}
-
-.sidebar h3{
-  margin-top:0;
 }
 
 .sidebar ul{
@@ -116,9 +110,7 @@ body{
   object-fit:cover;
 }
 
-.card-body{
-  padding:10px;
-}
+.card-body{padding:10px}
 
 .card h3{
   font-size:14px;
@@ -130,10 +122,7 @@ body{
   color:var(--muted);
 }
 
-.price{
-  font-weight:bold;
-}
-
+.price{font-weight:bold}
 .status{
   font-size:12px;
   color:var(--accent);
@@ -147,7 +136,7 @@ body{
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:10;
+  z-index:30;
 }
 
 .modal-content{
@@ -171,9 +160,7 @@ body{
   scroll-snap-align:start;
 }
 
-.modal-body{
-  padding:14px;
-}
+.modal-body{padding:14px}
 
 .close{
   text-align:center;
@@ -193,7 +180,6 @@ body{
 </div>
 
 <div class="sidebar" id="sidebar">
-  <h3>Категории</h3>
   <ul>
     <li>
       <div class="category-name">Верх</div>
@@ -216,7 +202,60 @@ body{
 </div>
 
 <script>
-const products = [...(твой массив товаров без изменений)...];
+const products=[
+{
+name:"Зип худи Zara Type crop fit (серый)",
+price:4300,
+status:"В наличии",
+short:"Плотный хлопок, тёплый флис",
+description:"Параметры модели: 185/70, размер L. Очень качественная зип худи. Держит форму, не деформируется. Brushed-флис создаёт эффект термобелья. Состав: 80% хлопок / 20% полиэстер. Цвет: серый.",
+subcategory:"zip_hoodies",
+photos:[
+"https://iili.io/fVQvE5F.jpg",
+"https://iili.io/fVQU5WG.jpg",
+"https://iili.io/fVQUMbe.webp"
+]
+},
+{
+name:"Зип худи No Faith Studio boxy crop fit",
+price:4600,
+status:"В наличии",
+short:"Boxy crop fit, streetwear",
+description:"Зип худи No Faith Studio в актуальном boxy crop fit силуэте. Свободная посадка, укороченная длина, плотный материал. Отлично держит форму, подчёркивает плечи. Подходит для повседневных и streetwear образов.",
+subcategory:"zip_hoodies",
+photos:[
+"https://iili.io/fVQNFpI.webp",
+"https://iili.io/fVQNUK7.webp",
+"https://iili.io/fVQNRJS.webp"
+]
+},
+{
+name:"Зип худи Zara Type crop fit (чёрный)",
+price:4300,
+status:"В наличии",
+short:"Минимализм, премиум пошив",
+description:"Актуальный крой crop fit. Плотная ткань, качественный пошив. Состав: 80% хлопок / 20% полиэстер.",
+subcategory:"zip_hoodies",
+photos:[
+"https://iili.io/fVQ6E4j.webp",
+"https://iili.io/fVQ6ba4.webp",
+"https://iili.io/fVQPF6b.webp"
+]
+},
+{
+name:"Лонгслив Derschutze crop fit",
+price:3890,
+status:"В наличии",
+short:"Эксклюзив, вышивка",
+description:"Единственный размер M. Свободный крой, укороченный силуэт, качественная вышивка.",
+subcategory:"longsleeves",
+photos:[
+"https://iili.io/fVQgdrl.webp",
+"https://iili.io/fVQgbaV.webp",
+"https://iili.io/fVQrMMb.webp"
+]
+}
+];
 
 const catalog=document.getElementById("catalog");
 const sidebar=document.getElementById("sidebar");
@@ -266,7 +305,7 @@ function closeModal(){
   modal.style.display="none";
 }
 
-// старт — все товары
+// стартовая лента
 render(products);
 </script>
 
