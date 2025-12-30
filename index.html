@@ -11,7 +11,11 @@
   --text:#2f2a26;
 }
 
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
 
 body{
   margin:0;
@@ -36,7 +40,6 @@ button{
   color:white;
   padding:8px 16px;
   border-radius:20px;
-  cursor:pointer;
 }
 
 .catalog{
@@ -51,7 +54,6 @@ button{
   border-radius:14px;
   overflow:hidden;
   box-shadow:0 6px 18px rgba(0,0,0,.2);
-  cursor:pointer;
 }
 
 .card img{
@@ -60,10 +62,7 @@ button{
   object-fit:cover;
 }
 
-.card-body{
-  padding:10px;
-}
-
+.card-body{padding:10px}
 .price{font-weight:bold}
 .status{font-size:12px;color:var(--accent)}
 
@@ -81,7 +80,6 @@ button{
 .subcat{
   padding-left:14px;
   margin:6px 0;
-  cursor:pointer;
 }
 
 .toast{
@@ -97,7 +95,7 @@ button{
   z-index:50;
 }
 
-/* FULLSCREEN GALLERY */
+/* MODAL */
 .modal{
   position:fixed;
   inset:0;
@@ -114,13 +112,19 @@ button{
   scroll-snap-type:x mandatory;
 }
 
-.slider img{
+.slide{
   min-width:100%;
-  height:100%;
-  object-fit:contain;
-  scroll-snap-align:start;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  overflow:hidden;
+}
+
+.slide img{
+  max-width:100%;
+  max-height:100%;
+  transition:transform .15s;
   touch-action:none;
-  transition:transform .1s;
 }
 
 .modal-info{
@@ -132,7 +136,6 @@ button{
   color:white;
   text-align:center;
   padding:12px;
-  cursor:pointer;
 }
 </style>
 </head>
@@ -210,10 +213,10 @@ photos:[
 
 // ===== КАТЕГОРИИ =====
 const categoriesData={
-"Головные уборы":{"caps":"Кепки","hats":"Шапки"},
-"Верх":{"zip_hoodies":"Зип худи","sweatshirts":"Свитшоты","longsleeves":"Лонгсливы","tshirts":"Футболки"},
-"Низ":{"pants":"Брюки","shorts":"Шорты","jeans":"Джинсы"},
-"Обувь":{"sneakers":"Кроссовки","shoes":"Туфли"}
+  "Головные уборы":{"caps":"Кепки","hats":"Шапки"},
+  "Верх":{"zip_hoodies":"Зип худи","sweatshirts":"Свитшоты","longsleeves":"Лонгсливы","tshirts":"Футболки"},
+  "Низ":{"pants":"Брюки","shorts":"Шорты","jeans":"Джинсы"},
+  "Обувь":{"sneakers":"Кроссовки","shoes":"Туфли"}
 };
 
 const catalog=document.getElementById("catalog");
@@ -221,85 +224,109 @@ const categories=document.getElementById("categories");
 const toast=document.getElementById("toast");
 
 function renderCatalog(list){
-catalog.innerHTML="";
-list.forEach(p=>{
-const card=document.createElement("div");
-card.className="card";
-card.innerHTML=`
-<img src="${p.photos[0]}" alt="">
-<div class="card-body">
-<div>${p.name}</div>
-<div class="price">${p.price} ₽</div>
-<div class="status">${p.status}</div>
-</div>
-`;
-card.onclick=()=>openModal(p);
-catalog.appendChild(card);
-});
+  catalog.innerHTML="";
+  list.forEach(p=>{
+    const card=document.createElement("div");
+    card.className="card";
+    card.onclick=()=>openModal(p);
+    card.innerHTML=
+      <img src="${p.photos[0]}">
+      <div class="card-body">
+        <div>${p.name}</div>
+        <div class="price">${p.price} ₽</div>
+        <div class="status">${p.status}</div>
+      </div>;
+    catalog.appendChild(card);
+  });
 }
 
 function toggleCategories(){
-const open=categories.style.display==="block";
-categories.style.display=open?"none":"block";
-catalog.style.display=open?"grid":"none";
+  const open=categories.style.display==="block";
+  categories.style.display=open?"none":"block";
+  catalog.style.display=open?"grid":"none";
 }
 
 function showToast(){
-toast.style.display="block";
-setTimeout(()=>toast.style.display="none",3000);
+  toast.style.display="block";
+  setTimeout(()=>toast.style.display="none",2500);
 }
 
 function filterSubcat(sub){
-const filtered=products.filter(p=>p.subcategory===sub);
-if(filtered.length===0){showToast();return;}
-categories.style.display="none";
-catalog.style.display="grid";
-renderCatalog(filtered);
+  const filtered=products.filter(p=>p.subcategory===sub);
+  if(!filtered.length){showToast();return;}
+  categories.style.display="none";
+  catalog.style.display="grid";
+  renderCatalog(filtered);
 }
-
 function buildCategories(){
-categories.innerHTML="";
-for(const cat in categoriesData){
-categories.innerHTML+=`<div class="category">${cat}</div>`;
-for(const sub in categoriesData[cat]){
-const d=document.createElement("div");
-d.className="subcat";
-d.textContent=categoriesData[cat][sub];
-d.onclick=()=>filterSubcat(sub);
-categories.appendChild(d);
-}
-}
+  categories.innerHTML="";
+  for(const cat in categoriesData){
+    const title=document.createElement("div");
+    title.className="category";
+    title.textContent=cat;
+    categories.appendChild(title);
+
+    for(const sub in categoriesData[cat]){
+      const sc=document.createElement("div");
+      sc.className="subcat";
+      sc.textContent=categoriesData[cat][sub];
+      sc.onclick=()=>filterSubcat(sub);
+      categories.appendChild(sc);
+    }
+  }
 }
 
-// ===== GALLERY WITH ZOOM =====
-const modal=document.getElementById("modal");
-const slider=document.getElementById("slider");
-const modalInfo=document.getElementById("modalInfo");
-let scale=1;
-
+// ===== MODAL + PINCH ZOOM =====
 function openModal(p){
-scale=1;
-slider.innerHTML=p.photos.map(i=>`<img src="${i}" alt="">`).join("");
-modalInfo.innerHTML=`
-<h3>${p.name}</h3>
-<p>${p.description}</p>
-<p><b>Цена:</b> ${p.price} ₽</p>
-<p><b>Статус:</b> ${p.status}</p>
-`;
-modal.style.display="flex";
+  const modal=document.getElementById("modal");
+  const slider=document.getElementById("slider");
+  const info=document.getElementById("modalInfo");
 
-slider.querySelectorAll("img").forEach(img=>{
-img.addEventListener("wheel",e=>{
-e.preventDefault();
-scale+=e.deltaY*-0.001;
-scale=Math.min(Math.max(1,scale),3);
-img.style.transform=`scale(${scale})`;
-});
-});
+  slider.innerHTML="";
+  p.photos.forEach(src=>{
+    const slide=document.createElement("div");
+    slide.className="slide";
+    slide.innerHTML=<img src="${src}">;
+    slider.appendChild(slide);
+    enableZoom(slide.querySelector("img"));
+  });
+
+  info.innerHTML=
+    <b>${p.name}</b><br>
+    ${p.description}<br><br>
+    <b>${p.price} ₽</b> • ${p.status}
+  ;
+
+  modal.style.display="flex";
 }
 
 function closeModal(){
-modal.style.display="none";
+  document.getElementById("modal").style.display="none";
+}
+
+function enableZoom(img){
+  let scale=1, startDist=0;
+
+  img.addEventListener("touchstart",e=>{
+    if(e.touches.length===2){
+      startDist=Math.hypot(
+        e.touches[0].pageX-e.touches[1].pageX,
+        e.touches[0].pageY-e.touches[1].pageY
+      );
+    }
+  });
+
+  img.addEventListener("touchmove",e=>{
+    if(e.touches.length===2){
+      const newDist=Math.hypot(
+        e.touches[0].pageX-e.touches[1].pageX,
+        e.touches[0].pageY-e.touches[1].pageY
+      );
+      scale=Math.min(Math.max(1,scale*(newDist/startDist)),3);
+      img.style.transform=scale(${scale});
+      startDist=newDist;
+    }
+  });
 }
 
 // INIT
