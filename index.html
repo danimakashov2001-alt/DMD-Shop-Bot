@@ -3,32 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Каталог</title>
+<title>DMD Shop</title>
 
 <style>
 :root{
-  --bg:#f6efe8;
   --card:#ffffff;
   --accent:#c49a6c;
   --text:#2f2a26;
   --muted:#7a6f66;
 }
 
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
 
 body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
-  background:var(--bg);
+  background:url("https://iili.io/fXfx3ep.jpg") center/cover fixed no-repeat;
   color:var(--text);
-  display:flex;
 }
 
-/* Sidebar */
-.sidebar{
-  width:180px;
-  background:#f0e6d8;
+/* HEADER */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
   padding:14px;
+  background:rgba(255,255,255,.9);
+  position:sticky;
+  top:0;
+  z-index:5;
+}
+
+.header h2{
+  margin:0;
+}
+
+.cat-btn{
+  padding:8px 14px;
+  border-radius:20px;
+  background:var(--accent);
+  color:white;
+  font-size:14px;
+  cursor:pointer;
+}
+
+/* SIDEBAR */
+.sidebar{
+  position:fixed;
+  left:0;
+  top:0;
+  bottom:0;
+  width:220px;
+  background:#f5efe8;
+  padding:14px;
+  overflow:auto;
+  transform:translateX(-100%);
+  transition:.25s;
+  z-index:6;
+}
+
+.sidebar.open{
+  transform:translateX(0);
 }
 
 .sidebar h3{
@@ -40,48 +79,24 @@ body{
   padding-left:0;
 }
 
-.sidebar li{
-  cursor:pointer;
+.category-name{
+  font-weight:bold;
   padding:6px 0;
-  position: relative;
-}
-
-/* Убираем выделение на мобильных устройствах */
-.category,
-.category-name,
-.subcategory-list li {
-  -webkit-tap-highlight-color: transparent;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-.sidebar li:hover{
-  color:var(--accent);
+  cursor:pointer;
 }
 
 .subcategory-list{
-  display:none;
   padding-left:14px;
 }
 
-.category.active .subcategory-list{
-  display:block;
+.subcategory-list li{
+  padding:4px 0;
+  cursor:pointer;
 }
 
-.category-name.active {
-  color: var(--accent);
-  font-weight: bold;
-}
-
-/* Catalog */
-.catalog-container{
-  flex:1;
-  padding:14px;
-}
-
+/* CATALOG */
 .catalog{
+  padding:14px;
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
   gap:14px;
@@ -91,12 +106,9 @@ body{
   background:var(--card);
   border-radius:16px;
   overflow:hidden;
-  box-shadow:0 6px 18px rgba(0,0,0,.08);
+  box-shadow:0 6px 18px rgba(0,0,0,.12);
   cursor:pointer;
-  transition:.2s;
 }
-
-.card:hover{transform:translateY(-3px)}
 
 .card img{
   width:100%;
@@ -116,10 +128,12 @@ body{
 .short{
   font-size:12px;
   color:var(--muted);
-  margin-bottom:6px;
 }
 
-.price{font-weight:bold}
+.price{
+  font-weight:bold;
+}
+
 .status{
   font-size:12px;
   color:var(--accent);
@@ -129,7 +143,7 @@ body{
 .modal{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.5);
+  background:rgba(0,0,0,.6);
   display:none;
   align-items:center;
   justify-content:center;
@@ -137,7 +151,7 @@ body{
 }
 
 .modal-content{
-  background:var(--card);
+  background:white;
   width:92%;
   max-height:90vh;
   border-radius:18px;
@@ -159,7 +173,6 @@ body{
 
 .modal-body{
   padding:14px;
-  font-size:14px;
 }
 
 .close{
@@ -174,43 +187,25 @@ body{
 
 <body>
 
-<div class="sidebar">
+<div class="header">
+  <h2>🛍 Каталог</h2>
+  <div class="cat-btn" onclick="toggleCategories()">Категории</div>
+</div>
+
+<div class="sidebar" id="sidebar">
   <h3>Категории</h3>
-  <ul id="categories">
-    <li class="category"><span class="category-name">Головные уборы</span>
+  <ul>
+    <li>
+      <div class="category-name">Верх</div>
       <ul class="subcategory-list">
-        <li data-subcategory="hats">Шапки</li>
-        <li data-subcategory="caps">Кепки</li>
-      </ul>
-    </li>
-    <li class="category"><span class="category-name">Верх</span>
-      <ul class="subcategory-list">
-        <li data-subcategory="zip_hoodies">Зип Худи</li>
-        <li data-subcategory="sweatshirts">Свитшоты</li>
-        <li data-subcategory="longsleeves">Лонгсливы</li>
-        <li data-subcategory="tshirts">Футболки</li>
-      </ul>
-    </li>
-    <li class="category"><span class="category-name">Низ</span>
-      <ul class="subcategory-list">
-        <li data-subcategory="jeans">Джинсы</li>
-        <li data-subcategory="shorts">Шорты</li>
-        <li data-subcategory="pants">Брюки</li>
-      </ul>
-    </li>
-    <li class="category"><span class="category-name">Обувь</span>
-      <ul class="subcategory-list">
-        <li data-subcategory="sneakers">Кроссовки</li>
-        <li data-subcategory="shoes">Туфли</li>
+        <li onclick="filter('zip_hoodies')">Зип худи</li>
+        <li onclick="filter('longsleeves')">Лонгсливы</li>
       </ul>
     </li>
   </ul>
 </div>
 
-<div class="catalog-container">
-  <h2>🛍 Каталог</h2>
-  <div class="catalog" id="catalog"></div>
-</div>
+<div class="catalog" id="catalog"></div>
 
 <div class="modal" id="modal">
   <div class="modal-content">
@@ -219,80 +214,27 @@ body{
     <div class="close" onclick="closeModal()">Закрыть</div>
   </div>
 </div>
+
 <script>
-// Товары с подкатегориями
-const products=[
-{
-name:"Зип худи Zara Type crop fit (серый)",
-price:4300,
-status:"В наличии",
-short:"Плотный хлопок, тёплый флис",
-description:"Параметры модели: 185/70, размер L. Очень качественная зип худи. Держит форму, не деформируется. Brushed-флис создаёт эффект термобелья. Состав: 80% хлопок / 20% полиэстер. Цвет: серый.",
-subcategory:"zip_hoodies",
-photos:[
-"https://iili.io/fVQvE5F.jpg",
-"https://iili.io/fVQU5WG.jpg",
-"https://iili.io/fVQUMbe.webp"
-]
-},
-{
-name:"Зип худи Zara Type crop fit (чёрный)",
-price:4300,
-status:"В наличии",
-short:"Минимализм, премиум пошив",
-description:"Актуальный крой crop fit. Плотная ткань, качественный пошив. Отлично держит форму. Состав: 80% хлопок / 20% полиэстер. Цвет: чёрный.",
-subcategory:"zip_hoodies",
-photos:[
-"https://iili.io/fVQ6E4j.webp",
-"https://iili.io/fVQ6ba4.webp",
-"https://iili.io/fVQPF6b.webp"
-]
-},
-{
-name:"Зип худи No Faith Studio boxy crop fit",
-price:4100,
-status:"В наличии",
-short:"Y2K / Opium стиль",
-description:"Эксклюзивная модель No Faith Studio. Boxy crop fit, укороченная длина. Хлопковый материал, унисекс. Цвет как на фото. Стиль y2k и opium.",
-subcategory:"zip_hoodies",
-photos:[
-"https://iili.io/fVQ4XXn.webp",
-"https://iili.io/fVQ4Pqb.webp",
-"https://iili.io/fVQ6zEG.webp"
-]
-},
-{
-name:"Лонгслив Derschutze crop fit",
-price:3890,
-status:"В наличии",
-short:"Эксклюзив, вышивка",
-description:"Единственный размер M. Свободный крой с укороченным силуэтом. Высококачественная вышивка на спине. Состав: 97% хлопок / 3% эластан. Единственный экземпляр в РФ.",
-subcategory:"longsleeves",
-photos:[
-"https://iili.io/fVQgdrl.webp",
-"https://iili.io/fVQgbaV.webp",
-"https://iili.io/fVQrMMb.webp",
-"https://iili.io/fVQrkDF.webp",
-"https://iili.io/fVQ4JJ2.webp",
-"https://iili.io/fVQ4I5B.webp"
-]
-}
-];
+const products = [...(твой массив товаров без изменений)...];
 
 const catalog=document.getElementById("catalog");
+const sidebar=document.getElementById("sidebar");
 const modal=document.getElementById("modal");
 const slider=document.getElementById("slider");
 const modalBody=document.getElementById("modalBody");
 
-// Показать товары по подкатегории
-function showProducts(subcat){
-  catalog.innerHTML = "";
-  const filtered = products.filter(p => p.subcategory === subcat);
-  filtered.forEach(p=>{
+function toggleCategories(){
+  sidebar.classList.toggle("open");
+}
+
+function render(list){
+  catalog.innerHTML="";
+  list.forEach(p=>{
     const card=document.createElement("div");
     card.className="card";
     card.innerHTML=`
-      <img src="${p.photos[0]}">
+      <img src="${p.photos[0]}" alt="">
       <div class="card-body">
         <h3>${p.name}</h3>
         <div class="short">${p.short}</div>
@@ -305,10 +247,13 @@ function showProducts(subcat){
   });
 }
 
-// Модалка
+function filter(sub){
+  render(products.filter(p=>p.subcategory===sub));
+}
+
 function openModal(p){
-  slider.innerHTML = p.photos.map(i => `<img src="${i}">`).join("");
-  modalBody.innerHTML = `
+  slider.innerHTML=p.photos.map(i=>`<img src="${i}" alt="">`).join("");
+  modalBody.innerHTML=`
     <h3>${p.name}</h3>
     <p>${p.description}</p>
     <p><b>Цена:</b> ${p.price} ₽</p>
@@ -321,33 +266,8 @@ function closeModal(){
   modal.style.display="none";
 }
 
-// Раскрытие категорий по клику на текст
-document.querySelectorAll('.category-name').forEach(span => {
-  span.addEventListener('click', e => {
-    e.stopPropagation();
-
-    // закрыть все другие категории
-    document.querySelectorAll('.category').forEach(c => c.classList.remove('active'));
-    document.querySelectorAll('.category-name').forEach(s => s.classList.remove('active'));
-
-    // открыть текущую категорию
-    const li = span.parentElement;
-    li.classList.toggle('active');
-    span.classList.toggle('active');
-  });
-});
-
-// Клик по подкатегории — показать товары
-document.querySelectorAll('[data-subcategory]').forEach(el=>{
-  el.addEventListener('click', e=>{
-    e.stopPropagation();
-    showProducts(el.dataset.subcategory);
-
-    // убираем выделение категорий
-    document.querySelectorAll('.category').forEach(c => c.classList.remove('active'));
-    document.querySelectorAll('.category-name').forEach(s => s.classList.remove('active'));
-  });
-});
+// старт — все товары
+render(products);
 </script>
 
 </body>
