@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Каталог</title>
 
 <style>
@@ -120,6 +119,8 @@ button{
   height:100%;
   object-fit:contain;
   scroll-snap-align:start;
+  touch-action:none;
+  transition:transform .1s;
 }
 
 .modal-info{
@@ -209,25 +210,10 @@ photos:[
 
 // ===== КАТЕГОРИИ =====
 const categoriesData={
-"Головные уборы":{
-"caps":"Кепки",
-"hats":"Шапки"
-},
-"Верх":{
-"zip_hoodies":"Зип худи",
-"sweatshirts":"Свитшоты",
-"longsleeves":"Лонгсливы",
-"tshirts":"Футболки"
-},
-"Низ":{
-"pants":"Брюки",
-"shorts":"Шорты",
-"jeans":"Джинсы"
-},
-"Обувь":{
-"sneakers":"Кроссовки",
-"shoes":"Туфли"
-}
+"Головные уборы":{"caps":"Кепки","hats":"Шапки"},
+"Верх":{"zip_hoodies":"Зип худи","sweatshirts":"Свитшоты","longsleeves":"Лонгсливы","tshirts":"Футболки"},
+"Низ":{"pants":"Брюки","shorts":"Шорты","jeans":"Джинсы"},
+"Обувь":{"sneakers":"Кроссовки","shoes":"Туфли"}
 };
 
 const catalog=document.getElementById("catalog");
@@ -253,9 +239,9 @@ catalog.appendChild(card);
 }
 
 function toggleCategories(){
-const isOpen=categories.style.display==="block";
-categories.style.display=isOpen?"none":"block";
-catalog.style.display=isOpen?"grid":"none";
+const open=categories.style.display==="block";
+categories.style.display=open?"none":"block";
+catalog.style.display=open?"grid":"none";
 }
 
 function showToast(){
@@ -274,26 +260,25 @@ renderCatalog(filtered);
 function buildCategories(){
 categories.innerHTML="";
 for(const cat in categoriesData){
-const c=document.createElement("div");
-c.className="category";
-c.textContent=cat;
-categories.appendChild(c);
+categories.innerHTML+=`<div class="category">${cat}</div>`;
 for(const sub in categoriesData[cat]){
-const s=document.createElement("div");
-s.className="subcat";
-s.textContent=categoriesData[cat][sub];
-s.onclick=()=>filterSubcat(sub);
-categories.appendChild(s);
+const d=document.createElement("div");
+d.className="subcat";
+d.textContent=categoriesData[cat][sub];
+d.onclick=()=>filterSubcat(sub);
+categories.appendChild(d);
 }
 }
 }
 
-// ===== MODAL =====
+// ===== GALLERY WITH ZOOM =====
 const modal=document.getElementById("modal");
 const slider=document.getElementById("slider");
 const modalInfo=document.getElementById("modalInfo");
+let scale=1;
 
 function openModal(p){
+scale=1;
 slider.innerHTML=p.photos.map(i=>`<img src="${i}" alt="">`).join("");
 modalInfo.innerHTML=`
 <h3>${p.name}</h3>
@@ -302,6 +287,15 @@ modalInfo.innerHTML=`
 <p><b>Статус:</b> ${p.status}</p>
 `;
 modal.style.display="flex";
+
+slider.querySelectorAll("img").forEach(img=>{
+img.addEventListener("wheel",e=>{
+e.preventDefault();
+scale+=e.deltaY*-0.001;
+scale=Math.min(Math.max(1,scale),3);
+img.style.transform=`scale(${scale})`;
+});
+});
 }
 
 function closeModal(){
@@ -314,8 +308,6 @@ renderCatalog(products);
 </script>
 
 </body>
-</html
-
-
+</html>
 
 
