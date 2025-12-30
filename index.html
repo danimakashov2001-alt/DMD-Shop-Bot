@@ -229,13 +229,13 @@ function renderCatalog(list){
     const card=document.createElement("div");
     card.className="card";
     card.onclick=()=>openModal(p);
-    card.innerHTML=
+    card.innerHTML=`
       <img src="${p.photos[0]}">
       <div class="card-body">
         <div>${p.name}</div>
         <div class="price">${p.price} ₽</div>
         <div class="status">${p.status}</div>
-      </div>;
+      </div>`;
     catalog.appendChild(card);
   });
 }
@@ -336,6 +336,7 @@ renderCatalog(products);
 
 </body>
 </html>
+
 
 
 
