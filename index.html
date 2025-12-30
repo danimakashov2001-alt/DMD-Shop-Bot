@@ -8,17 +8,16 @@
 <style>
 :root{
   --accent:#c49a6c;
-  --bg-dark:#121212;
+  --dark:#0f0f0f;
   --card:#ffffff;
-  --text:#2f2a26;
 }
 
-*{box-sizing:border-box;margin:0;padding:0}
+*{margin:0;padding:0;box-sizing:border-box}
 
 body{
   font-family:-apple-system,BlinkMacSystemFont,Arial;
   background:url("https://iili.io/fXfx3ep.jpg") center/cover fixed;
-  color:var(--text);
+  color:#222;
 }
 
 /* HEADER */
@@ -27,27 +26,23 @@ header{
   justify-content:space-between;
   align-items:center;
   padding:8px 14px;
-  background:rgba(25,25,25,.85);
+  background:rgba(15,15,15,.85);
   backdrop-filter:blur(6px);
   color:#fff;
 }
 
-header h3{
-  font-size:16px;
-  font-weight:600;
-}
+header h3{font-size:16px}
 
-header button{
-  border:none;
+button{
   background:var(--accent);
-  color:white;
+  color:#fff;
+  border:none;
   padding:6px 14px;
   border-radius:16px;
-  font-size:13px;
   cursor:pointer;
 }
 
-/* CATALOG */
+/* CATALOG GRID */
 .catalog{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
@@ -56,7 +51,7 @@ header button{
 }
 
 .card{
-  background:var(--card);
+  background:#fff;
   border-radius:14px;
   overflow:hidden;
   box-shadow:0 6px 18px rgba(0,0,0,.25);
@@ -73,81 +68,76 @@ header button{
   padding:10px;
 }
 
-.price{font-weight:600}
 .status{font-size:12px;color:var(--accent)}
 
 /* CATEGORIES */
-#categoryOverlay{
+#overlay{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.7);
+  background:rgba(0,0,0,.75);
   display:none;
-  z-index:50;
+  z-index:20;
 }
 
 #categories{
-  background:#1a1a1a;
-  color:#fff;
-  width:85%;
+  width:80%;
   max-width:320px;
   height:100%;
+  background:#141414;
+  color:#fff;
   padding:16px;
 }
 
-.category{
-  font-weight:600;
-  margin-top:14px;
-}
+.category{margin-top:14px;font-weight:600}
+.subcat{margin:6px 0 6px 14px;color:#bbb;cursor:pointer}
 
-.subcat{
-  margin:6px 0 6px 14px;
-  color:#ccc;
-  cursor:pointer;
-}
-
-/* MODAL */
-.modal{
+/* FULLSCREEN GALLERY */
+#gallery{
   position:fixed;
   inset:0;
   background:#000;
   display:none;
-  flex-direction:column;
   z-index:100;
 }
 
-.slider{
-  flex:1;
+.gallery-track{
   display:flex;
-  overflow-x:auto;
-  scroll-snap-type:x mandatory;
-  touch-action:none;
+  height:100%;
+  width:100%;
+  touch-action:pan-y pinch-zoom;
 }
 
-.slide{
+.gallery-slide{
   min-width:100%;
+  height:100%;
   display:flex;
-  justify-content:center;
   align-items:center;
-  scroll-snap-align:start;
+  justify-content:center;
 }
 
-.slide img{
+.gallery-slide img{
   max-width:100%;
   max-height:100%;
-  transition:transform .15s;
-  touch-action:none;
 }
 
-.modal-info{
-  background:#fff;
+/* INFO */
+.gallery-info{
+  position:absolute;
+  bottom:0;
+  left:0;
+  right:0;
+  background:rgba(0,0,0,.6);
+  color:#fff;
   padding:12px;
   font-size:14px;
 }
 
 .close{
-  text-align:center;
-  padding:10px;
+  position:absolute;
+  top:12px;
+  right:16px;
   color:#fff;
+  font-size:20px;
   cursor:pointer;
 }
 </style>
@@ -160,7 +150,7 @@ header button{
   <button onclick="openCategories()">Категории</button>
 </header>
 
-<div id="categoryOverlay" onclick="closeCategories()">
+<div id="overlay" onclick="closeCategories()">
   <div id="categories" onclick="event.stopPropagation()">
     <div class="category">Худи</div>
     <div class="subcat" onclick="filterCat('zip_hoodies')">Зип худи</div>
@@ -172,10 +162,11 @@ header button{
 
 <div class="catalog" id="catalog"></div>
 
-<div class="modal" id="modal">
-  <div class="slider" id="slider"></div>
-  <div class="modal-info" id="modalInfo"></div>
-  <div class="close" onclick="closeModal()">Закрыть</div>
+<!-- GALLERY -->
+<div id="gallery">
+  <div class="close" onclick="closeGallery()">✕</div>
+  <div class="gallery-track" id="track"></div>
+  <div class="gallery-info" id="info"></div>
 </div>
 
 <script>
@@ -237,12 +228,12 @@ photos:[
 ];
 
 const catalog=document.getElementById("catalog");
-const modal=document.getElementById("modal");
-const slider=document.getElementById("slider");
-const modalInfo=document.getElementById("modalInfo");
+const track=document.getElementById("track");
+const gallery=document.getElementById("gallery");
+const info=document.getElementById("info");
 
-let scale=1, startX=0, startY=0;
-const render=(list)=>{
+let startX=0, currentX=0, index=0;
+const render=list=>{
   catalog.innerHTML="";
   list.forEach(p=>{
     const c=document.createElement("div");
@@ -251,40 +242,48 @@ const render=(list)=>{
       <img src="${p.photos[0]}">
       <div class="card-body">
         <div>${p.name}</div>
-        <div class="price">${p.price} ₽</div>
         <div class="status">${p.status}</div>
       </div>`;
-    c.onclick=()=>openModal(p);
+    c.onclick=()=>openGallery(p);
     catalog.appendChild(c);
   });
 };
 
-const openModal=(p)=>{
-  slider.innerHTML="";
+const openGallery=p=>{
+  track.innerHTML="";
   p.photos.forEach(src=>{
     const s=document.createElement("div");
-    s.className="slide";
-    const img=document.createElement("img");
-    img.src=src;
-    img.ondblclick=()=>{scale=scale===1?2:1;img.style.transform=`scale(${scale})`;}
-    img.onpointerdown=e=>{startX=e.clientX;startY=e.clientY;}
-    img.onpointermove=e=>{
-      if(scale>1){
-        img.style.transform=`scale(${scale}) translate(${(e.clientX-startX)/3}px, ${(e.clientY-startY)/3}px)`;
-      }
-    };
-    s.appendChild(img);
-    slider.appendChild(s);
+    s.className="gallery-slide";
+    s.innerHTML=`<img src="${src}">`;
+    track.appendChild(s);
   });
-  modalInfo.innerHTML=`<b>${p.name}</b><br>${p.description}<br><b>${p.price} ₽</b>`;
-  modal.style.display="flex";
+  index=0;
+  track.style.transform="translateX(0)";
+  info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽`;
+  gallery.style.display="block";
 };
 
-const closeModal=()=>{modal.style.display="none";scale=1;}
+track.addEventListener("touchstart",e=>{
+  startX=e.touches[0].clientX;
+});
+track.addEventListener("touchmove",e=>{
+  currentX=e.touches[0].clientX-startX;
+  track.style.transform=`translateX(${currentX-index*innerWidth}px)`;
+});
+track.addEventListener("touchend",()=>{
+  if(Math.abs(currentX)>50){
+    index+=currentX<0?1:-1;
+  }
+  index=Math.max(0,Math.min(index,track.children.length-1));
+  track.style.transform=`translateX(${-index*innerWidth}px)`;
+  currentX=0;
+});
 
-const openCategories=()=>{document.getElementById("categoryOverlay").style.display="block";}
-const closeCategories=()=>{document.getElementById("categoryOverlay").style.display="none";}
-const filterCat=(c)=>{render(products.filter(p=>p.subcategory===c));closeCategories();}
+const closeGallery=()=>gallery.style.display="none";
+
+const openCategories=()=>overlay.style.display="block";
+const closeCategories=()=>overlay.style.display="none";
+const filterCat=c=>{render(products.filter(p=>p.subcategory===c));closeCategories();};
 
 render(products);
 </script>
