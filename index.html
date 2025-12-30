@@ -26,15 +26,16 @@ header{
   justify-content:space-between;
   align-items:center;
   padding:14px;
+  background:rgba(40,40,40,.75);
+  color:white;
   backdrop-filter:blur(6px);
-  background:rgba(255,255,255,.8);
 }
 
 button{
   border:none;
   background:var(--accent);
   color:white;
-  padding:8px 14px;
+  padding:8px 16px;
   border-radius:20px;
   cursor:pointer;
 }
@@ -50,7 +51,7 @@ button{
   background:white;
   border-radius:14px;
   overflow:hidden;
-  box-shadow:0 6px 18px rgba(0,0,0,.15);
+  box-shadow:0 6px 18px rgba(0,0,0,.2);
   cursor:pointer;
 }
 
@@ -70,13 +71,20 @@ button{
 #categories{
   display:none;
   padding:14px;
-  background:rgba(255,255,255,.9);
+  background:rgba(255,255,255,.95);
 }
 
-.category{margin-bottom:10px;font-weight:bold}
-.subcat{padding-left:14px;cursor:pointer;font-weight:normal}
+.category{
+  font-weight:bold;
+  margin-top:12px;
+}
 
-/* ===== уведомление ===== */
+.subcat{
+  padding-left:14px;
+  margin:6px 0;
+  cursor:pointer;
+}
+
 .toast{
   position:fixed;
   bottom:20px;
@@ -90,7 +98,7 @@ button{
   z-index:50;
 }
 
-/* ===== FULLSCREEN ===== */
+/* FULLSCREEN GALLERY */
 .modal{
   position:fixed;
   inset:0;
@@ -136,7 +144,6 @@ button{
 </header>
 
 <div id="categories"></div>
-
 <div class="catalog" id="catalog"></div>
 
 <div class="toast" id="toast">Нет товара</div>
@@ -149,7 +156,7 @@ button{
 
 <script>
 // ===== ТОВАРЫ =====
-const products = [
+const products=[
 {
 name:"Зип худи Zara Type crop fit (серый)",
 price:4300,
@@ -201,23 +208,32 @@ photos:[
 ];
 
 // ===== КАТЕГОРИИ =====
-const categoriesData = {
-"Верх": {
+const categoriesData={
+"Головные уборы":{
+"caps":"Кепки",
+"hats":"Шапки"
+},
+"Верх":{
 "zip_hoodies":"Зип худи",
 "sweatshirts":"Свитшоты",
-"longsleeves":"Лонгсливы"
+"longsleeves":"Лонгсливы",
+"tshirts":"Футболки"
 },
-"Низ": {
+"Низ":{
 "pants":"Брюки",
-"shorts":"Шорты"
+"shorts":"Шорты",
+"jeans":"Джинсы"
+},
+"Обувь":{
+"sneakers":"Кроссовки",
+"shoes":"Туфли"
 }
 };
 
-const catalog = document.getElementById("catalog");
-const categories = document.getElementById("categories");
-const toast = document.getElementById("toast");
+const catalog=document.getElementById("catalog");
+const categories=document.getElementById("categories");
+const toast=document.getElementById("toast");
 
-// ===== РЕНДЕР =====
 function renderCatalog(list){
 catalog.innerHTML="";
 list.forEach(p=>{
@@ -236,10 +252,10 @@ catalog.appendChild(card);
 });
 }
 
-// ===== КАТЕГОРИИ =====
 function toggleCategories(){
-categories.style.display =
-categories.style.display==="block" ? "none":"block";
+const isOpen=categories.style.display==="block";
+categories.style.display=isOpen?"none":"block";
+catalog.style.display=isOpen?"grid":"none";
 }
 
 function showToast(){
@@ -248,9 +264,28 @@ setTimeout(()=>toast.style.display="none",3000);
 }
 
 function filterSubcat(sub){
-const filtered = products.filter(p=>p.subcategory===sub);
+const filtered=products.filter(p=>p.subcategory===sub);
 if(filtered.length===0){showToast();return;}
+categories.style.display="none";
+catalog.style.display="grid";
 renderCatalog(filtered);
+}
+
+function buildCategories(){
+categories.innerHTML="";
+for(const cat in categoriesData){
+const c=document.createElement("div");
+c.className="category";
+c.textContent=cat;
+categories.appendChild(c);
+for(const sub in categoriesData[cat]){
+const s=document.createElement("div");
+s.className="subcat";
+s.textContent=categoriesData[cat][sub];
+s.onclick=()=>filterSubcat(sub);
+categories.appendChild(s);
+}
+}
 }
 
 // ===== MODAL =====
@@ -273,28 +308,13 @@ function closeModal(){
 modal.style.display="none";
 }
 
-// ===== INIT =====
-function buildCategories(){
-for(const cat in categoriesData){
-const div=document.createElement("div");
-div.className="category";
-div.textContent=cat;
-categories.appendChild(div);
-for(const sub in categoriesData[cat]){
-const s=document.createElement("div");
-s.className="subcat";
-s.textContent=categoriesData[cat][sub];
-s.onclick=()=>filterSubcat(sub);
-categories.appendChild(s);
-}
-}
-}
-
+// INIT
 buildCategories();
 renderCatalog(products);
 </script>
 
 </body>
-</html>
+</html
+
 
 
