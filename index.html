@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>Каталог</title>
 
 <style>
@@ -13,6 +13,7 @@ body{
   font-family:-apple-system,BlinkMacSystemFont,Arial;
   background:#0b0b0b;
   color:#fff;
+  overscroll-behavior:none;
 }
 
 /* HEADER */
@@ -22,7 +23,7 @@ header{
   align-items:center;
   justify-content:space-between;
   padding:0 14px;
-  background:rgba(15,15,15,.9);
+  background:rgba(15,15,15,.95);
 }
 button{
   background:var(--accent);
@@ -63,35 +64,27 @@ button{
   z-index:100;
   overflow:hidden;
 }
+
 .viewer{
   position:absolute;
   inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.viewer img{
-  max-width:100%;
-  max-height:100%;
-  transform-origin:0 0;
-  cursor:grab;
+  overflow:hidden;
   touch-action:none;
 }
 
-/* ARROWS (PC) */
-.arrow{
+.viewer img{
   position:absolute;
-  top:50%;
-  transform:translateY(-50%);
-  font-size:36px;
-  padding:10px;
-  cursor:pointer;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  transform-origin:0 0;
+  will-change:transform;
   user-select:none;
+  cursor:grab;
 }
-.arrow.left{left:10px}
-.arrow.right{right:10px}
 
-/* CLOSE */
+/* UI */
 .close{
   position:absolute;
   top:14px;
@@ -101,7 +94,19 @@ button{
   z-index:10;
 }
 
-/* INFO */
+.arrow{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:36px;
+  padding:12px;
+  cursor:pointer;
+  z-index:10;
+  user-select:none;
+}
+.arrow.left{left:10px}
+.arrow.right{right:10px}
+
 .info{
   position:absolute;
   bottom:0;
@@ -111,6 +116,22 @@ button{
   padding:12px;
   font-size:14px;
 }
+
+.dots{
+  position:absolute;
+  bottom:70px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:6px;
+}
+.dot{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#555;
+}
+.dot.active{background:#fff}
 </style>
 </head>
 
@@ -118,6 +139,7 @@ button{
 
 <header>
   <h3>🛍 Каталог</h3>
+  <button>Категории</button>
 </header>
 
 <div class="catalog" id="catalog"></div>
@@ -127,10 +149,12 @@ button{
   <div class="arrow left" onclick="prev()">‹</div>
   <div class="arrow right" onclick="next()">›</div>
   <div class="viewer" id="viewer"></div>
+  <div class="dots" id="dots"></div>
   <div class="info" id="info"></div>
 </div>
 
 <script>
+/* ================= DATA ================= */
 const products=[
 {
 name:"Зип худи Zara Type crop fit (серый)",
@@ -188,16 +212,8 @@ photos:[
 }
 ];
 
+/* ================= CATALOG ================= */
 const catalog=document.getElementById("catalog");
-const gallery=document.getElementById("gallery");
-const viewer=document.getElementById("viewer");
-const info=document.getElementById("info");
-
-let current=[],index=0;
-let img,scale=1,x=0,y=0,startX=0,startY=0;
-let pinchDist=0;
-
-/* RENDER */
 products.forEach(p=>{
   const c=document.createElement("div");
   c.className="card";
@@ -212,66 +228,96 @@ products.forEach(p=>{
   catalog.appendChild(c);
 });
 
+/* ================= GALLERY CORE ================= */
+const gallery=document.getElementById("gallery");
+const viewer=document.getElementById("viewer");
+const dots=document.getElementById("dots");
+const info=document.getElementById("info");
+
+let photos=[],index=0;
+let img,scale=1,tx=0,ty=0;
+let startX=0,startY=0;
+let pinchStart=0,startScale=1;
+let dragging=false;
+let lastTap=0;
+
+/* OPEN / CLOSE */
 function openGallery(p){
-  current=p.photos;
+  photos=p.photos;
   index=0;
   gallery.style.display="block";
   load();
   info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽<br>${p.status}<br>${p.description}`;
 }
-
-function load(){
-  viewer.innerHTML="";
-  img=document.createElement("img");
-  img.src=current[index];
-  viewer.appendChild(img);
-  scale=1;x=0;y=0;
-  update();
-}
-
-function update(){
-  img.style.transform=`translate(${x}px,${y}px) scale(${scale})`;
-}
-
-function prev(){if(index>0){index--;load()}}
-function next(){if(index<current.length-1){index++;load()}}
-
 function closeGallery(){
   gallery.style.display="none";
 }
 
-/* PC ZOOM */
+/* LOAD */
+function load(){
+  viewer.innerHTML="";
+  img=document.createElement("img");
+  img.src=photos[index];
+  viewer.appendChild(img);
+  reset();
+  renderDots();
+}
+function reset(){
+  scale=1;tx=0;ty=0;
+  apply();
+}
+function apply(){
+  img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+}
+
+/* NAV */
+function prev(){if(index>0){index--;load()}}
+function next(){if(index<photos.length-1){index++;load()}}
+
+function renderDots(){
+  dots.innerHTML="";
+  photos.forEach((_,i)=>{
+    const d=document.createElement("div");
+    d.className="dot"+(i===index?" active":"");
+    dots.appendChild(d);
+  });
+}
+
+/* ================= DESKTOP ================= */
 gallery.addEventListener("wheel",e=>{
   e.preventDefault();
   const rect=img.getBoundingClientRect();
   const cx=e.clientX-rect.left;
   const cy=e.clientY-rect.top;
-  const prevScale=scale;
-  scale=Math.min(3,Math.max(1,scale+(e.deltaY<0?0.2:-0.2)));
-  x-=cx*(scale/prevScale-1);
-  y-=cy*(scale/prevScale-1);
-  update();
+  const prev=scale;
+  scale=Math.min(4,Math.max(1,scale+(e.deltaY<0?0.25:-0.25)));
+  tx-=cx*(scale/prev-1);
+  ty-=cy*(scale/prev-1);
+  apply();
 },{passive:false});
 
-/* DRAG */
-img?.addEventListener("mousedown",e=>{
-  startX=e.clientX-x;
-  startY=e.clientY-y;
-  window.onmousemove=ev=>{
-    x=ev.clientX-startX;
-    y=ev.clientY-startY;
-    update();
-  };
-  window.onmouseup=()=>window.onmousemove=null;
+viewer.addEventListener("mousedown",e=>{
+  if(scale===1)return;
+  dragging=true;
+  startX=e.clientX-tx;
+  startY=e.clientY-ty;
 });
+window.addEventListener("mousemove",e=>{
+  if(!dragging)return;
+  tx=e.clientX-startX;
+  ty=e.clientY-startY;
+  apply();
+});
+window.addEventListener("mouseup",()=>dragging=false);
 
-/* TOUCH */
+/* ================= TOUCH (iOS) ================= */
 viewer.addEventListener("touchstart",e=>{
   if(e.touches.length===2){
-    pinchDist=Math.hypot(
+    pinchStart=Math.hypot(
       e.touches[0].clientX-e.touches[1].clientX,
       e.touches[0].clientY-e.touches[1].clientY
     );
+    startScale=scale;
   }else{
     startX=e.touches[0].clientX;
     startY=e.touches[0].clientY;
@@ -284,18 +330,25 @@ viewer.addEventListener("touchmove",e=>{
       e.touches[0].clientX-e.touches[1].clientX,
       e.touches[0].clientY-e.touches[1].clientY
     );
-    scale=Math.min(3,Math.max(1,scale*d/pinchDist));
-    pinchDist=d;
-    update();
+    scale=Math.min(4,Math.max(1,startScale*d/pinchStart));
+    apply();
   }
 });
 
 viewer.addEventListener("touchend",e=>{
+  const now=Date.now();
+  if(now-lastTap<280){
+    scale=scale===1?2:1;
+    tx=ty=0;
+    apply();
+  }
+  lastTap=now;
+
   if(e.changedTouches[0]){
     const dx=e.changedTouches[0].clientX-startX;
     const dy=e.changedTouches[0].clientY-startY;
-    if(Math.abs(dx)>60) dx<0?next():prev();
-    if(dy>120) closeGallery();
+    if(Math.abs(dx)>80)dx<0?next():prev();
+    if(dy>120)closeGallery();
   }
 });
 </script>
