@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Каталог товаров</title>
 
-<!-- PhotoSwipe 5 CSS -->
+<!-- PhotoSwipe 5 через CDN -->
 <link rel="stylesheet" href="https://unpkg.com/photoswipe@5/dist/photoswipe.css">
 
 <style>
@@ -43,7 +43,7 @@ header { height:46px; display:flex; align-items:center; padding:0 14px; backgrou
 <header>🛍 Каталог</header>
 <div class="catalog" id="catalog"></div>
 
-<!-- Root element of PhotoSwipe. Must have class pswp -->
+<!-- PhotoSwipe -->
 <div class="pswp" id="pswp" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="pswp__bg"></div>
   <div class="pswp__scroll-wrap">
@@ -66,18 +66,16 @@ header { height:46px; display:flex; align-items:center; padding:0 14px; backgrou
           </div>
         </div>
       </div>
-      <!-- Custom info overlay -->
       <div class="pswp__custom-info" id="pswp-info"></div>
     </div>
   </div>
 </div>
 
-<!-- PhotoSwipe 5 JS -->
-<script src="https://unpkg.com/photoswipe@5/dist/photoswipe.min.js"></script>
-<script src="https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.esm.min.js" type="module"></script>
+<!-- PhotoSwipe Lightbox через CDN -->
+<script type="module" src="https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.esm.min.js"></script>
 
 <script type="module">
-// Catalog Data
+// ====== Каталог товаров ======
 const products=[
 {
 name:"Зип худи Zara Type crop fit (серый)",
@@ -135,34 +133,42 @@ photos:[
 }
 ];
 
-// Render catalog
+// ====== Рендер каталога ======
 const catalogEl = document.getElementById('catalog');
+
 products.forEach((p, pi) => {
   const card = document.createElement('div');
   card.className = 'card';
-  card.innerHTML = `<img src="${p.photos[0]}" alt=""><div class="card-body">${p.name}<br>${p.price} ₽</div>`;
-  card.addEventListener('click', () => openGallery(pi));
+  card.innerHTML = `
+    <img src="${p.photos[0]}" alt="${p.name}">
+    <div class="card-body">${p.name}<br>${p.price} ₽</div>
+  `;
   catalogEl.appendChild(card);
+
+  // Клик по карточке открывает галерею
+  card.addEventListener('click', () => {
+    openGallery(pi);
+  });
 });
 
-// Initialize PhotoSwipe Lightbox
+// ====== PhotoSwipe галерея ======
 let lightbox;
+
 function openGallery(productIndex) {
   const product = products[productIndex];
+
   const items = product.photos.map(url => ({ src: url, w: 1200, h: 900 }));
 
-  if(lightbox) lightbox.destroy();
+  if(lightbox) lightbox.destroy(); // Если уже открыт, удаляем прошлый
 
   lightbox = new PhotoSwipeLightbox({
-    gallery: '#catalog',
-    children: 'img',
-    pswpModule: PhotoSwipe,
     dataSource: items,
+    pswpModule: PhotoSwipe,
     showHideAnimationType: 'fade',
-    zoom: true,
+    zoom: true
   });
 
-  // Update info overlay on slide change
+  // Overlay с информацией
   lightbox.on('change', () => {
     const currIndex = lightbox.pswp.currIndex;
     const infoEl = document.getElementById('pswp-info');
@@ -174,11 +180,9 @@ function openGallery(productIndex) {
     `;
   });
 
-  // Open first slide
   lightbox.init();
   lightbox.loadAndOpen(0);
 }
 </script>
-
 </body>
 </html>
