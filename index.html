@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
 <title>Каталог</title>
 
 <style>
@@ -11,7 +11,7 @@
 
 body{
   font-family:-apple-system,BlinkMacSystemFont,Arial;
-  background:url("https://iili.io/fXfx3ep.jpg") center/cover fixed;
+  background:#0b0b0b;
   color:#fff;
 }
 
@@ -19,11 +19,10 @@ body{
 header{
   height:46px;
   display:flex;
-  justify-content:space-between;
   align-items:center;
+  justify-content:space-between;
   padding:0 14px;
-  background:rgba(15,15,15,.88);
-  backdrop-filter:blur(8px);
+  background:rgba(15,15,15,.9);
 }
 button{
   background:var(--accent);
@@ -31,7 +30,6 @@ button{
   padding:7px 16px;
   border-radius:18px;
   color:#fff;
-  cursor:pointer;
 }
 
 /* CATALOG */
@@ -46,8 +44,6 @@ button{
   color:#000;
   border-radius:16px;
   overflow:hidden;
-  box-shadow:0 8px 20px rgba(0,0,0,.35);
-  cursor:pointer;
 }
 .card img{
   width:100%;
@@ -58,28 +54,6 @@ button{
 .price{font-weight:600}
 .status{color:var(--accent);font-size:12px}
 
-/* CATEGORIES */
-#overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.82);
-  display:none;
-  z-index:20;
-}
-#categories{
-  width:80%;
-  max-width:320px;
-  height:100%;
-  background:#141414;
-  padding:18px;
-}
-.category{margin-top:14px;font-weight:600}
-.subcat{
-  margin:6px 0 6px 14px;
-  color:#bbb;
-  cursor:pointer;
-}
-
 /* GALLERY */
 #gallery{
   position:fixed;
@@ -87,42 +61,45 @@ button{
   background:#000;
   display:none;
   z-index:100;
+  overflow:hidden;
 }
-.track{
-  display:flex;
-  height:100%;
-  transition:transform .3s ease;
-}
-.slide{
-  min-width:100%;
+.viewer{
+  position:absolute;
+  inset:0;
   display:flex;
   align-items:center;
   justify-content:center;
 }
-.slide img{
+.viewer img{
   max-width:100%;
   max-height:100%;
-  touch-action:none;
-  user-select:none;
+  transform-origin:0 0;
   cursor:grab;
+  touch-action:none;
 }
 
-/* DOTS */
-#dots{
+/* ARROWS (PC) */
+.arrow{
   position:absolute;
-  bottom:110px;
-  width:100%;
-  display:flex;
-  justify-content:center;
-  gap:8px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:36px;
+  padding:10px;
+  cursor:pointer;
+  user-select:none;
 }
-.dot{
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:#555;
+.arrow.left{left:10px}
+.arrow.right{right:10px}
+
+/* CLOSE */
+.close{
+  position:absolute;
+  top:14px;
+  right:18px;
+  font-size:26px;
+  cursor:pointer;
+  z-index:10;
 }
-.dot.active{background:var(--accent)}
 
 /* INFO */
 .info{
@@ -134,13 +111,6 @@ button{
   padding:12px;
   font-size:14px;
 }
-.close{
-  position:absolute;
-  top:12px;
-  right:16px;
-  font-size:24px;
-  cursor:pointer;
-}
 </style>
 </head>
 
@@ -148,23 +118,15 @@ button{
 
 <header>
   <h3>🛍 Каталог</h3>
-  <button onclick="openCats()">Категории</button>
 </header>
-
-<div id="overlay" onclick="closeCats()">
-  <div id="categories" onclick="event.stopPropagation()">
-    <div class="category">Верх</div>
-    <div class="subcat" onclick="filter('zip_hoodies')">Зип худи</div>
-    <div class="subcat" onclick="filter('longsleeves')">Лонгсливы</div>
-  </div>
-</div>
 
 <div class="catalog" id="catalog"></div>
 
 <div id="gallery">
   <div class="close" onclick="closeGallery()">✕</div>
-  <div class="track" id="track"></div>
-  <div id="dots"></div>
+  <div class="arrow left" onclick="prev()">‹</div>
+  <div class="arrow right" onclick="next()">›</div>
+  <div class="viewer" id="viewer"></div>
   <div class="info" id="info"></div>
 </div>
 
@@ -227,95 +189,115 @@ photos:[
 ];
 
 const catalog=document.getElementById("catalog");
-const track=document.getElementById("track");
 const gallery=document.getElementById("gallery");
+const viewer=document.getElementById("viewer");
 const info=document.getElementById("info");
-const dots=document.getElementById("dots");
 
-let index=0,startX=0,isDown=false,scale=1,tx=0,ty=0;
-let currentProduct=null;
+let current=[],index=0;
+let img,scale=1,x=0,y=0,startX=0,startY=0;
+let pinchDist=0;
 
-function render(list){
-  catalog.innerHTML="";
-  list.forEach(p=>{
-    const c=document.createElement("div");
-    c.className="card";
-    c.innerHTML=`
-      <img src="${p.photos[0]}" alt="">
-      <div class="card-body">
-        <div>${p.name}</div>
-        <div class="price">${p.price} ₽</div>
-        <div class="status">${p.status}</div>
-      </div>`;
-    c.onclick=()=>openGallery(p);
-    catalog.appendChild(c);
-  });
-}
+/* RENDER */
+products.forEach(p=>{
+  const c=document.createElement("div");
+  c.className="card";
+  c.innerHTML=`
+    <img src="${p.photos[0]}">
+    <div class="card-body">
+      <div>${p.name}</div>
+      <div class="price">${p.price} ₽</div>
+      <div class="status">${p.status}</div>
+    </div>`;
+  c.onclick=()=>openGallery(p);
+  catalog.appendChild(c);
+});
 
 function openGallery(p){
-  currentProduct=p;
-  track.innerHTML="";
-  dots.innerHTML="";
-  p.photos.forEach((src,i)=>{
-    const s=document.createElement("div");
-    s.className="slide";
-    s.innerHTML=`<img src="${src}">`;
-    track.appendChild(s);
-    const d=document.createElement("div");
-    d.className="dot"+(i===0?" active":"");
-    dots.appendChild(d);
-  });
-  index=0;scale=1;tx=ty=0;
-  update();
-  info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽<br>${p.status}<br>${p.description}`;
+  current=p.photos;
+  index=0;
   gallery.style.display="block";
+  load();
+  info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽<br>${p.status}<br>${p.description}`;
+}
+
+function load(){
+  viewer.innerHTML="";
+  img=document.createElement("img");
+  img.src=current[index];
+  viewer.appendChild(img);
+  scale=1;x=0;y=0;
+  update();
 }
 
 function update(){
-  track.style.transform=`translateX(${-index*innerWidth}px)`;
-  [...dots.children].forEach((d,i)=>d.classList.toggle("active",i===index));
-  const img=track.children[index].querySelector("img");
-  img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+  img.style.transform=`translate(${x}px,${y}px) scale(${scale})`;
 }
 
-track.addEventListener("mousedown",e=>{isDown=true;startX=e.clientX});
-window.addEventListener("mouseup",()=>isDown=false);
-track.addEventListener("mousemove",e=>{
-  if(!isDown||scale!==1)return;
-  let dx=e.clientX-startX;
-  if(Math.abs(dx)>80){
-    index+=dx<0?1:-1;
-    index=Math.max(0,Math.min(index,track.children.length-1));
-    startX=e.clientX;
+function prev(){if(index>0){index--;load()}}
+function next(){if(index<current.length-1){index++;load()}}
+
+function closeGallery(){
+  gallery.style.display="none";
+}
+
+/* PC ZOOM */
+gallery.addEventListener("wheel",e=>{
+  e.preventDefault();
+  const rect=img.getBoundingClientRect();
+  const cx=e.clientX-rect.left;
+  const cy=e.clientY-rect.top;
+  const prevScale=scale;
+  scale=Math.min(3,Math.max(1,scale+(e.deltaY<0?0.2:-0.2)));
+  x-=cx*(scale/prevScale-1);
+  y-=cy*(scale/prevScale-1);
+  update();
+},{passive:false});
+
+/* DRAG */
+img?.addEventListener("mousedown",e=>{
+  startX=e.clientX-x;
+  startY=e.clientY-y;
+  window.onmousemove=ev=>{
+    x=ev.clientX-startX;
+    y=ev.clientY-startY;
+    update();
+  };
+  window.onmouseup=()=>window.onmousemove=null;
+});
+
+/* TOUCH */
+viewer.addEventListener("touchstart",e=>{
+  if(e.touches.length===2){
+    pinchDist=Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY
+    );
+  }else{
+    startX=e.touches[0].clientX;
+    startY=e.touches[0].clientY;
+  }
+});
+
+viewer.addEventListener("touchmove",e=>{
+  if(e.touches.length===2){
+    const d=Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY
+    );
+    scale=Math.min(3,Math.max(1,scale*d/pinchDist));
+    pinchDist=d;
     update();
   }
 });
 
-track.addEventListener("wheel",e=>{
-  e.preventDefault();
-  scale=Math.min(3,Math.max(1,scale+(e.deltaY<0?0.2:-0.2)));
-  update();
-},{passive:false});
-
-track.addEventListener("dblclick",()=>{
-  scale=scale===1?2:1;
-  tx=ty=0;
-  update();
+viewer.addEventListener("touchend",e=>{
+  if(e.changedTouches[0]){
+    const dx=e.changedTouches[0].clientX-startX;
+    const dy=e.changedTouches[0].clientY-startY;
+    if(Math.abs(dx)>60) dx<0?next():prev();
+    if(dy>120) closeGallery();
+  }
 });
-
-function closeGallery(){
-  gallery.style.display="none";
-  scale=1;
-}
-
-function openCats(){overlay.style.display="block"}
-function closeCats(){overlay.style.display="none"}
-function filter(c){
-  render(products.filter(p=>p.subcategory===c));
-  closeCats();
-}
-
-render(products);
 </script>
 
 </body>
