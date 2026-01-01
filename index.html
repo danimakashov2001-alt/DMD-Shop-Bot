@@ -2,26 +2,26 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Каталог</title>
 
 <style>
-:root{--accent:#c49a6c}
+:root { --accent:#c49a6c }
 *{margin:0;padding:0;box-sizing:border-box}
 
 body{
   font-family:-apple-system,BlinkMacSystemFont,Arial;
   background:#0b0b0b;
   color:#fff;
-  overscroll-behavior:none;
 }
 
 /* HEADER */
 header{
   height:46px;
   display:flex;
-  align-items:center;
   justify-content:space-between;
+  align-items:center;
   padding:0 14px;
   background:rgba(15,15,15,.95);
 }
@@ -31,29 +31,6 @@ button{
   padding:7px 16px;
   border-radius:18px;
   color:#fff;
-}
-
-/* CATEGORY PANEL */
-#categories{
-  display:none;
-  padding:14px;
-}
-.cat{
-  margin-bottom:10px;
-}
-.cat-title{
-  font-weight:600;
-  cursor:pointer;
-}
-.subcats{
-  margin-top:6px;
-  display:none;
-}
-.subcats div{
-  font-size:13px;
-  padding:4px 0;
-  cursor:pointer;
-  color:#ccc;
 }
 
 /* CATALOG */
@@ -75,8 +52,6 @@ button{
   object-fit:cover;
 }
 .card-body{padding:10px;font-size:13px}
-.price{font-weight:600}
-.status{color:var(--accent);font-size:12px}
 
 /* GALLERY */
 #gallery{
@@ -85,29 +60,42 @@ button{
   background:#000;
   display:none;
   z-index:100;
-  overflow:hidden;
 }
 
 .viewer{
   position:absolute;
   inset:0;
   overflow:hidden;
-  touch-action:none;
 }
 
 .viewer img{
   position:absolute;
-  inset:0;
+  left:0;
+  top:0;
   width:100%;
   height:100%;
   object-fit:contain;
   transform-origin:0 0;
-  will-change:transform;
+  user-select:none;
 }
 
 /* UI */
-.close{position:absolute;top:14px;right:18px;font-size:26px;z-index:10}
-.arrow{position:absolute;top:50%;transform:translateY(-50%);font-size:36px;padding:12px;z-index:10}
+.close{
+  position:absolute;
+  top:14px;
+  right:18px;
+  font-size:26px;
+  z-index:10;
+}
+.arrow{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:36px;
+  padding:12px;
+  z-index:10;
+  user-select:none;
+}
 .arrow.left{left:10px}
 .arrow.right{right:10px}
 
@@ -119,14 +107,16 @@ button{
   display:flex;
   gap:6px;
 }
-.dot{width:6px;height:6px;border-radius:50%;background:#555}
+.dot{
+  width:6px;height:6px;border-radius:50%;
+  background:#555;
+}
 .dot.active{background:#fff}
 
 .info{
   position:absolute;
   bottom:0;
-  left:0;
-  right:0;
+  left:0;right:0;
   background:rgba(0,0,0,.7);
   padding:12px;
   font-size:14px;
@@ -138,10 +128,8 @@ button{
 
 <header>
   <h3>🛍 Каталог</h3>
-  <button onclick="toggleCategories()">Категории</button>
 </header>
 
-<div id="categories"></div>
 <div class="catalog" id="catalog"></div>
 
 <div id="gallery">
@@ -154,7 +142,7 @@ button{
 </div>
 
 <script>
-/* ================= DATA ================= */
+/* DATA */
 const products=[
 {
 name:"Зип худи Zara Type crop fit (серый)",
@@ -212,63 +200,19 @@ photos:[
 }
 ];
 
-/* ================= CATEGORIES ================= */
-const categories={
-  "Худи":["zip_hoodies"],
-  "Лонгсливы":["longsleeves"]
-};
-
-const catBox=document.getElementById("categories");
-let catOpen=false;
-
-function toggleCategories(){
-  catOpen=!catOpen;
-  catBox.style.display=catOpen?"block":"none";
-  if(catOpen) renderCategories();
-  renderCatalog(products);
-}
-
-function renderCategories(){
-  catBox.innerHTML="";
-  Object.entries(categories).forEach(([cat,subs])=>{
-    const c=document.createElement("div");
-    c.className="cat";
-    c.innerHTML=`<div class="cat-title">${cat}</div>`;
-    const s=document.createElement("div");
-    s.className="subcats";
-    subs.forEach(sub=>{
-      const d=document.createElement("div");
-      d.textContent=sub;
-      d.onclick=()=>renderCatalog(products.filter(p=>p.subcategory===sub));
-      s.appendChild(d);
-    });
-    c.querySelector(".cat-title").onclick=()=>s.style.display=s.style.display==="block"?"none":"block";
-    c.appendChild(s);
-    catBox.appendChild(c);
-  });
-}
-
-/* ================= CATALOG ================= */
+/* CATALOG */
 const catalog=document.getElementById("catalog");
-function renderCatalog(list){
-  catalog.innerHTML="";
-  list.forEach(p=>{
-    const c=document.createElement("div");
-    c.className="card";
-    c.innerHTML=`
-      <img src="${p.photos[0]}">
-      <div class="card-body">
-        <div>${p.name}</div>
-        <div class="price">${p.price} ₽</div>
-        <div class="status">${p.status}</div>
-      </div>`;
-    c.onclick=()=>openGallery(p);
-    catalog.appendChild(c);
-  });
-}
-renderCatalog(products);
+products.forEach(p=>{
+  const c=document.createElement("div");
+  c.className="card";
+  c.innerHTML=`
+    <img src="${p.photos[0]}">
+    <div class="card-body">${p.name}<br>${p.price} ₽</div>`;
+  c.onclick=()=>openGallery(p);
+  catalog.appendChild(c);
+});
 
-/* ================= GALLERY (iOS-LIKE) ================= */
+/* GALLERY CORE */
 const gallery=document.getElementById("gallery");
 const viewer=document.getElementById("viewer");
 const dots=document.getElementById("dots");
@@ -276,27 +220,44 @@ const info=document.getElementById("info");
 
 let photos=[],index=0,img;
 let scale=1,tx=0,ty=0;
-let startX=0,startY=0,pinchStart=0,startScale=1,lastTap=0;
+let startX=0,startY=0;
+let startDist=0,startScale=1;
+let lastTap=0;
 
 function openGallery(p){
-  photos=p.photos;index=0;
+  photos=p.photos;
+  index=0;
   gallery.style.display="block";
   load();
-  info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽`;
+  info.innerHTML=`${p.name} · ${p.price} ₽`;
 }
-function closeGallery(){gallery.style.display="none"}
+
+function closeGallery(){
+  gallery.style.display="none";
+}
 
 function load(){
   viewer.innerHTML="";
   img=document.createElement("img");
   img.src=photos[index];
   viewer.appendChild(img);
-  scale=1;tx=ty=0;
-  apply();renderDots();
+  reset();
+  renderDots();
 }
-function apply(){img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`}
-function prev(){if(index>0){index--;load()}}
-function next(){if(index<photos.length-1){index++;load()}}
+
+function reset(){
+  scale=1;tx=0;ty=0;
+  apply();
+}
+
+function apply(){
+  img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+}
+
+/* NAV */
+function prev(){ if(index>0){index--;load()} }
+function next(){ if(index<photos.length-1){index++;load()} }
+
 function renderDots(){
   dots.innerHTML="";
   photos.forEach((_,i)=>{
@@ -306,10 +267,23 @@ function renderDots(){
   });
 }
 
-/* TOUCH PERFECT */
+/* DESKTOP ZOOM */
+gallery.addEventListener("wheel",e=>{
+  e.preventDefault();
+  const r=img.getBoundingClientRect();
+  const cx=e.clientX-r.left;
+  const cy=e.clientY-r.top;
+  const prev=scale;
+  scale=Math.min(4,Math.max(1,scale+(e.deltaY<0?0.25:-0.25)));
+  tx-=cx*(scale/prev-1);
+  ty-=cy*(scale/prev-1);
+  apply();
+},{passive:false});
+
+/* TOUCH — iOS STYLE */
 viewer.addEventListener("touchstart",e=>{
   if(e.touches.length===2){
-    pinchStart=Math.hypot(
+    startDist=Math.hypot(
       e.touches[0].clientX-e.touches[1].clientX,
       e.touches[0].clientY-e.touches[1].clientY
     );
@@ -318,37 +292,39 @@ viewer.addEventListener("touchstart",e=>{
     startX=e.touches[0].clientX-tx;
     startY=e.touches[0].clientY-ty;
   }
-},{passive:false});
+},{passive:true});
 
 viewer.addEventListener("touchmove",e=>{
-  e.preventDefault();
   if(e.touches.length===2){
+    e.preventDefault();
     const d=Math.hypot(
       e.touches[0].clientX-e.touches[1].clientX,
       e.touches[0].clientY-e.touches[1].clientY
     );
-    scale=Math.min(4,Math.max(1,startScale*d/pinchStart));
+    scale=Math.min(4,Math.max(1,startScale*d/startDist));
+    apply();
   }else if(scale>1){
+    e.preventDefault();
     tx=e.touches[0].clientX-startX;
     ty=e.touches[0].clientY-startY;
+    apply();
   }
-  apply();
 },{passive:false});
 
 viewer.addEventListener("touchend",e=>{
   const now=Date.now();
   if(now-lastTap<300){
+    const t=e.changedTouches[0];
+    const rect=img.getBoundingClientRect();
+    const cx=t.clientX-rect.left;
+    const cy=t.clientY-rect.top;
+    const prev=scale;
     scale=scale===1?2:1;
-    tx=ty=0;apply();
+    tx-=cx*(scale/prev-1);
+    ty-=cy*(scale/prev-1);
+    apply();
   }
   lastTap=now;
-
-  if(scale===1 && e.changedTouches[0]){
-    const dx=e.changedTouches[0].clientX-startX;
-    const dy=e.changedTouches[0].clientY-startY;
-    if(Math.abs(dx)>80)dx<0?next():prev();
-    if(dy>120)closeGallery();
-  }
 });
 </script>
 
