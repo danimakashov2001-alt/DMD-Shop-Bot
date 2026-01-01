@@ -2,13 +2,11 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Каталог</title>
 
 <style>
-:root{
-  --accent:#c49a6c;
-}
+:root{--accent:#c49a6c}
 *{margin:0;padding:0;box-sizing:border-box}
 
 body{
@@ -33,7 +31,6 @@ button{
   padding:6px 14px;
   border-radius:14px;
   color:#fff;
-  cursor:pointer;
 }
 
 /* CATALOG */
@@ -48,7 +45,6 @@ button{
   color:#000;
   border-radius:14px;
   overflow:hidden;
-  box-shadow:0 6px 18px rgba(0,0,0,.25);
 }
 .card img{
   width:100%;
@@ -103,7 +99,7 @@ button{
   max-width:100%;
   max-height:100%;
   touch-action:none;
-  transition:transform .15s ease;
+  transition:transform .2s ease;
 }
 
 /* INFO */
@@ -121,7 +117,6 @@ button{
   top:12px;
   right:16px;
   font-size:22px;
-  cursor:pointer;
 }
 </style>
 </head>
@@ -155,87 +150,42 @@ const products=[
 name:"Зип худи Zara Type crop fit (серый)",
 price:4300,
 status:"В наличии",
-description:"Параметры модели: 185/70, размер L. Плотный хлопок, brushed-флис. Цвет серый.",
+description:"Плотный хлопок, brushed-флис. Цвет серый.",
 subcategory:"zip_hoodies",
-photos:[
-"https://iili.io/fVQvE5F.jpg",
-"https://iili.io/fVQU5WG.jpg",
-"https://iili.io/fVQUMbe.webp",
-"https://iili.io/fVQUv5P.webp"
-]
+photos:["https://iili.io/fVQvE5F.jpg","https://iili.io/fVQU5WG.jpg","https://iili.io/fVQUMbe.webp"]
 },
 {
 name:"Зип худи Zara Type crop fit (чёрный)",
 price:4300,
 status:"В наличии",
-description:"Минимализм, премиум пошив. Цвет чёрный.",
+description:"Минимализм, премиум пошив.",
 subcategory:"zip_hoodies",
-photos:[
-"https://iili.io/fVQ6E4j.webp",
-"https://iili.io/fVQ6ba4.webp",
-"https://iili.io/fVQPF6b.webp",
-"https://iili.io/fVQPuMg.webp",
-"https://iili.io/fVQP0NI.webp"
-]
+photos:["https://iili.io/fVQ6E4j.webp","https://iili.io/fVQ6ba4.webp"]
 },
 {
 name:"Зип худи No Faith Studio boxy crop fit",
 price:4100,
 status:"В наличии",
-description:"Эксклюзив. Y2K / Opium стиль. Унисекс.",
+description:"Y2K / Opium стиль.",
 subcategory:"zip_hoodies",
-photos:[
-"https://iili.io/fXB5Ctj.jpg",
-"https://iili.io/fVQ4Pqb.webp",
-"https://iili.io/fVQ6zEG.webp"
-]
+photos:["https://iili.io/fXB5Ctj.jpg","https://iili.io/fVQ6zEG.webp"]
 },
 {
 name:"Лонгслив Derschutze crop fit",
 price:3890,
 status:"В наличии",
-description:"Эксклюзив. Вышивка. Размер M.",
+description:"Эксклюзив. Размер M.",
 subcategory:"longsleeves",
-photos:[
-"https://iili.io/fVQgdrl.webp",
-"https://iili.io/fVQgbaV.webp",
-"https://iili.io/fVQrMMb.webp",
-"https://iili.io/fVQrkDF.webp",
-"https://iili.io/fVQ4JJ2.webp",
-"https://iili.io/fVQ4I5B.webp"
-]
+photos:["https://iili.io/fVQgdrl.webp","https://iili.io/fVQrMMb.webp"]
 }
 ];
 
 const catalog=document.getElementById("catalog");
 const gallery=document.getElementById("gallery");
 const track=document.getElementById("track");
-const dots=document.getElementById("dots");
 const info=document.getElementById("info");
 
-let index=0, startX=0, dx=0;
-let scale=1, panX=0, panY=0;
-let imgEl=null, isDragging=false, lastTouchDist=0;
-
-function render(list){
-  catalog.innerHTML="";
-  list.forEach(p=>{
-    const c=document.createElement("div");
-    c.className="card";
-    c.innerHTML=`<img src="${p.photos[0]}"><div class="card-body">${p.name}<br><span class="status">${p.status}</span></div>`;
-    c.onclick=()=>openGallery(p);
-    catalog.appendChild(c);
-  });
-}
-
-const catalog=document.getElementById("catalog");
-const gallery=document.getElementById("gallery");
-const track=document.getElementById("track");
-const info=document.getElementById("info");
-
-let index=0, startX=0;
-let scale=1;
-let currentProduct=null;
+let index=0,startX=0,scale=1,current=null;
 
 function render(list){
   catalog.innerHTML="";
@@ -256,7 +206,7 @@ function render(list){
 }
 
 function openGallery(p){
-  currentProduct=p;
+  current=p;
   track.innerHTML="";
   p.photos.forEach(src=>{
     const s=document.createElement("div");
@@ -264,65 +214,39 @@ function openGallery(p){
     s.innerHTML=`<img src="${src}" alt="">`;
     track.appendChild(s);
   });
-  index=0;
-  scale=1;
-  updateSlide();
-  updateInfo();
+  index=0;scale=1;
+  update();
+  info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽<br>${p.status}<br>${p.description}`;
   gallery.style.display="block";
 }
 
-function updateSlide(){
+function update(){
   track.style.transform=`translateX(${-index*innerWidth}px)`;
-  [...track.querySelectorAll("img")].forEach(img=>{
-    img.style.transform="scale(1)";
-  });
+  track.querySelectorAll("img").forEach(img=>img.style.transform="scale(1)");
 }
 
-function updateInfo(){
-  info.innerHTML=`
-    <b>${currentProduct.name}</b><br>
-    ${currentProduct.price} ₽<br>
-    ${currentProduct.status}<br>
-    ${currentProduct.description}
-  `;
-}
-
-// SWIPE
-track.addEventListener("touchstart",e=>{
-  if(scale!==1) return;
-  startX=e.touches[0].clientX;
-});
+track.addEventListener("touchstart",e=>startX=e.touches[0].clientX);
 track.addEventListener("touchend",e=>{
-  if(scale!==1) return;
-  let dx=e.changedTouches[0].clientX-startX;
+  const dx=e.changedTouches[0].clientX-startX;
   if(Math.abs(dx)>50){
     index+=dx<0?1:-1;
     index=Math.max(0,Math.min(index,track.children.length-1));
-    updateSlide();
+    update();
   }
 });
 
-// ZOOM
 track.addEventListener("dblclick",()=>{
+  const img=track.children[index].querySelector("img");
   scale=scale===1?2:1;
-  track.children[index].querySelector("img")
-    .style.transform=`scale(${scale})`;
+  img.style.transform=`scale(${scale})`;
 });
 
-function closeGallery(){
-  gallery.style.display="none";
-  scale=1;
-}
-
+function closeGallery(){gallery.style.display="none";scale=1}
 function openCats(){overlay.style.display="block"}
 function closeCats(){overlay.style.display="none"}
-function filter(c){
-  render(products.filter(p=>p.subcategory===c));
-  closeCats();
-}
+function filter(c){render(products.filter(p=>p.subcategory===c));closeCats()}
 
 render(products);
 </script>
-
 </body>
 </html>
