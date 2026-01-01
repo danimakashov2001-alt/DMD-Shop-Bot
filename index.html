@@ -101,8 +101,8 @@ button{
 
 .viewer img{
   position:absolute;
-  left:0;
-  top:0;
+  left:50%;
+  top:50%;
   width:100%;
   height:100%;
   object-fit:contain;
@@ -187,36 +187,36 @@ button{
   bottom:0;
   left:0;right:0;
   background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.8) 100%);
-  padding:14px;
-  font-size:13px;
+  padding:12px 14px;
+  font-size:12px;
   z-index:15;
-  max-height:25%;
+  max-height:22%;
   overflow-y:auto;
 }
 
 .info-title{
   font-weight:600;
-  margin-bottom:6px;
-  font-size:14px;
+  margin-bottom:4px;
+  font-size:13px;
+  line-height:1.3;
 }
 
 .info-price{
   color:var(--accent);
   font-weight:600;
-  margin-bottom:6px;
+  margin-bottom:4px;
+  font-size:12px;
 }
 
 .info-desc{
-  font-size:12px;
-  color:#ccc;
-  line-height:1.4;
+  font-size:11px;
+  color:#aaa;
+  line-height:1.3;
+  margin-bottom:4px;
 }
 
 .info-status{
-  margin-top:8px;
-  padding:6px 0;
-  border-top:1px solid rgba(255,255,255,.1);
-  font-size:12px;
+  font-size:11px;
   color:#7cb342;
 }
 </style>
@@ -332,7 +332,9 @@ let startX=0,startY=0;
 let startTx=0,startTy=0;
 let startDist=0,startScale=1;
 let lastTap=0;
-let isZoomed=false;
+let lastClickTime=0;
+let touchStartX=0,touchStartY=0;
+let isSwiping=false;
 
 function openGallery(p){
   currentProduct=p;
@@ -365,12 +367,11 @@ function reset(){
   scale=1;
   tx=0;
   ty=0;
-  isZoomed=false;
   apply();
 }
 
 function apply(){
-  img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+  img.style.transform=`translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(${scale})`;
 }
 
 function updateCounter(){
@@ -418,29 +419,73 @@ function renderDots(){
   });
 }
 
-/* DESKTOP ZOOM - WHEEL */
+/* DESKTOP: WHEEL ZOOM */
 gallery.addEventListener("wheel",e=>{
   if(!img) return;
   e.preventDefault();
-  const r=img.getBoundingClientRect();
-  const cx=e.clientX-r.left;
-  const cy=e.clientY-r.top;
-  const delta=e.deltaY<0?1:-1;
-  const prev=scale;
-  scale=Math.min(4,Math.max(1,scale+delta*0.25));
+  
+  const viewerRect=viewer.getBoundingClientRect();
+  const imgRect=img.getBoundingClientRect();
+  
+  const cursorX=e.clientX-viewerRect.left;
+  const cursorY=e.clientY-viewerRect.top;
+  
+  const prevScale=scale;
+  scale=Math.min(4,Math.max(1,scale+(e.deltaY<0?0.25:-0.25)));
+  
   if(scale>1){
-    tx-=cx*(scale/prev-1);
-    ty-=cy*(scale/prev-1);
+    const imgCenterX=imgRect.width/2;
+    const imgCenterY=imgRect.height/2;
+    
+    const offsetX=cursorX-imgCenterX;
+    const offsetY=cursorY-imgCenterY;
+    
+    tx=offsetX*(1-scale/prevScale);
+    ty=offsetY*(1-scale/prevScale);
+  }else{
+    tx=0;
+    ty=0;
   }
+  
   apply();
 },{passive:false});
+
+/* DESKTOP: DOUBLE CLICK ZOOM */
+viewer.addEventListener("dblclick",e=>{
+  if(!img) return;
+  
+  const viewerRect=viewer.getBoundingClientRect();
+  const imgRect=img.getBoundingClientRect();
+  
+  const cursorX=e.clientX-viewerRect.left;
+  const cursorY=e.clientY-viewerRect.top;
+  
+  const prevScale=scale;
+  scale=scale===1?2:1;
+  
+  if(scale>1){
+    const imgCenterX=imgRect.width/2;
+    const imgCenterY=imgRect.height/2;
+    
+    const offsetX=cursorX-imgCenterX;
+    const offsetY=cursorY-imgCenterY;
+    
+    tx=offsetX*(1-scale/prevScale);
+    ty=offsetY*(1-scale/prevScale);
+  }else{
+    tx=0;
+    ty=0;
+  }
+  
+  apply();
+});
 
 /* TOUCH GESTURES */
 viewer.addEventListener("touchstart",e=>{
   if(!img) return;
   
   if(e.touches.length===2){
-    // Pinch zoom
+    // Pinch zoom start
     startDist=Math.hypot(
       e.touches[0].clientX-e.touches[1].clientX,
       e.touches[0].clientY-e.touches[1].clientY
@@ -448,13 +493,14 @@ viewer.addEventListener("touchstart",e=>{
     startScale=scale;
     startTx=tx;
     startTy=ty;
-    isZoomed=true;
+    isSwiping=false;
   }else if(e.touches.length===1){
-    // Pan/swipe
-    startX=e.touches[0].clientX;
-    startY=e.touches[0].clientY;
+    // Single touch
+    touchStartX=e.touches[0].clientX;
+    touchStartY=e.touches[0].clientY;
     startTx=tx;
     startTy=ty;
+    isSwiping=false;
   }
 },{passive:true});
 
@@ -464,31 +510,49 @@ viewer.addEventListener("touchmove",e=>{
   if(e.touches.length===2){
     // Pinch zoom
     e.preventDefault();
+    
     const newDist=Math.hypot(
       e.touches[0].clientX-e.touches[1].clientX,
       e.touches[0].clientY-e.touches[1].clientY
     );
     
     const ratio=newDist/startDist;
-    scale=Math.min(4,Math.max(1,startScale*ratio));
+    const newScale=Math.min(4,Math.max(1,startScale*ratio));
     
     // Center point for zoom
     const centerX=(e.touches[0].clientX+e.touches[1].clientX)/2;
     const centerY=(e.touches[0].clientY+e.touches[1].clientY)/2;
-    const rect=img.getBoundingClientRect();
-    const cx=centerX-rect.left;
-    const cy=centerY-rect.top;
     
-    tx=startTx-cx*(scale/startScale-1);
-    ty=startTy-cy*(scale/startScale-1);
+    const viewerRect=viewer.getBoundingClientRect();
+    const imgRect=img.getBoundingClientRect();
+    
+    const cursorX=centerX-viewerRect.left;
+    const cursorY=centerY-viewerRect.top;
+    
+    const imgCenterX=imgRect.width/2;
+    const imgCenterY=imgRect.height/2;
+    
+    const offsetX=cursorX-imgCenterX;
+    const offsetY=cursorY-imgCenterY;
+    
+    scale=newScale;
+    tx=offsetX*(1-scale/startScale);
+    ty=offsetY*(1-scale/startScale);
     
     apply();
-  }else if(e.touches.length===1 && isZoomed){
+  }else if(e.touches.length===1 && scale>1){
     // Pan while zoomed
     e.preventDefault();
-    tx=startTx+(e.touches[0].clientX-startX);
-    ty=startTy+(e.touches[0].clientY-startY);
+    tx=startTx+(e.touches[0].clientX-touchStartX);
+    ty=startTy+(e.touches[0].clientY-touchStartY);
     apply();
+    isSwiping=true;
+  }else if(e.touches.length===1 && scale===1){
+    // Swipe when not zoomed
+    const deltaX=e.touches[0].clientX-touchStartX;
+    if(Math.abs(deltaX)>5){
+      isSwiping=true;
+    }
   }
 },{passive:false});
 
@@ -500,41 +564,57 @@ viewer.addEventListener("touchend",e=>{
     const touch=e.changedTouches[0];
     
     // Double tap zoom
-    if(now-lastTap<300 && e.touches.length===0){
-      const rect=img.getBoundingClientRect();
-      const cx=touch.clientX-rect.left;
-      const cy=touch.clientY-rect.top;
-      const prev=scale;
+    if(now-lastTap<300 && !isSwiping){
+      const viewerRect=viewer.getBoundingClientRect();
+      const imgRect=img.getBoundingClientRect();
+      
+      const touchX=touch.clientX-viewerRect.left;
+      const touchY=touch.clientY-viewerRect.top;
+      
+      const prevScale=scale;
       scale=scale===1?2:1;
+      
       if(scale>1){
-        tx=-cx*(scale/prev-1);
-        ty=-cy*(scale/prev-1);
+        const imgCenterX=imgRect.width/2;
+        const imgCenterY=imgRect.height/2;
+        
+        const offsetX=touchX-imgCenterX;
+        const offsetY=touchY-imgCenterY;
+        
+        tx=offsetX*(1-scale/prevScale);
+        ty=offsetY*(1-scale/prevScale);
       }else{
         tx=0;
         ty=0;
       }
       apply();
+    }else if(!isSwiping){
+      // Swipe detection
+      const deltaX=touch.clientX-touchStartX;
+      
+      if(Math.abs(deltaX)>30 && scale===1){
+        if(deltaX>0 && index>0){
+          prev();
+        }else if(deltaX<0 && index<photos.length-1){
+          next();
+        }
+      }
     }
     
     lastTap=now;
   }
   
   if(e.touches.length===1){
-    isZoomed=false;
-    startX=e.touches[0].clientX;
-    startY=e.touches[0].clientY;
+    touchStartX=e.touches[0].clientX;
+    touchStartY=e.touches[0].clientY;
     startTx=tx;
     startTy=ty;
+    isSwiping=false;
   }
 },{passive:false});
 
 // Prevent default iOS behavior
 document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
-document.addEventListener('touchmove',e=>{
-  if(gallery.style.display==="block"){
-    e.preventDefault();
-  }
-},{passive:false});
 </script>
 
 </body>
