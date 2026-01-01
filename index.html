@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Каталог</title>
 
 <style>
@@ -17,20 +17,21 @@ body{
 
 /* HEADER */
 header{
-  height:44px;
+  height:46px;
   display:flex;
-  align-items:center;
   justify-content:space-between;
+  align-items:center;
   padding:0 14px;
-  background:rgba(15,15,15,.85);
-  backdrop-filter:blur(6px);
+  background:rgba(15,15,15,.88);
+  backdrop-filter:blur(8px);
 }
 button{
   background:var(--accent);
   border:none;
-  padding:6px 14px;
-  border-radius:14px;
+  padding:7px 16px;
+  border-radius:18px;
   color:#fff;
+  cursor:pointer;
 }
 
 /* CATALOG */
@@ -43,18 +44,17 @@ button{
 .card{
   background:#fff;
   color:#000;
-  border-radius:14px;
+  border-radius:16px;
   overflow:hidden;
+  box-shadow:0 8px 20px rgba(0,0,0,.35);
+  cursor:pointer;
 }
 .card img{
   width:100%;
-  height:200px;
+  height:210px;
   object-fit:cover;
 }
-.card-body{
-  padding:10px;
-  font-size:13px;
-}
+.card-body{padding:10px;font-size:13px}
 .price{font-weight:600}
 .status{color:var(--accent);font-size:12px}
 
@@ -62,7 +62,7 @@ button{
 #overlay{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.8);
+  background:rgba(0,0,0,.82);
   display:none;
   z-index:20;
 }
@@ -71,10 +71,14 @@ button{
   max-width:320px;
   height:100%;
   background:#141414;
-  padding:16px;
+  padding:18px;
 }
 .category{margin-top:14px;font-weight:600}
-.subcat{margin:6px 0 6px 14px;color:#bbb;cursor:pointer}
+.subcat{
+  margin:6px 0 6px 14px;
+  color:#bbb;
+  cursor:pointer;
+}
 
 /* GALLERY */
 #gallery{
@@ -99,8 +103,26 @@ button{
   max-width:100%;
   max-height:100%;
   touch-action:none;
-  transition:transform .2s ease;
+  user-select:none;
+  cursor:grab;
 }
+
+/* DOTS */
+#dots{
+  position:absolute;
+  bottom:110px;
+  width:100%;
+  display:flex;
+  justify-content:center;
+  gap:8px;
+}
+.dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#555;
+}
+.dot.active{background:var(--accent)}
 
 /* INFO */
 .info{
@@ -108,7 +130,7 @@ button{
   bottom:0;
   left:0;
   right:0;
-  background:rgba(0,0,0,.65);
+  background:rgba(0,0,0,.7);
   padding:12px;
   font-size:14px;
 }
@@ -116,7 +138,8 @@ button{
   position:absolute;
   top:12px;
   right:16px;
-  font-size:22px;
+  font-size:24px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -141,6 +164,7 @@ button{
 <div id="gallery">
   <div class="close" onclick="closeGallery()">✕</div>
   <div class="track" id="track"></div>
+  <div id="dots"></div>
   <div class="info" id="info"></div>
 </div>
 
@@ -150,17 +174,28 @@ const products=[
 name:"Зип худи Zara Type crop fit (серый)",
 price:4300,
 status:"В наличии",
-description:"Плотный хлопок, brushed-флис. Цвет серый.",
+description:"Параметры модели: 185/70, размер L.",
 subcategory:"zip_hoodies",
-photos:["https://iili.io/fVQvE5F.jpg","https://iili.io/fVQU5WG.jpg","https://iili.io/fVQUMbe.webp"]
+photos:[
+"https://iili.io/fVQvE5F.jpg",
+"https://iili.io/fVQU5WG.jpg",
+"https://iili.io/fVQUMbe.webp",
+"https://iili.io/fVQUv5P.webp"
+]
 },
 {
 name:"Зип худи Zara Type crop fit (чёрный)",
 price:4300,
 status:"В наличии",
-description:"Минимализм, премиум пошив.",
+description:"Минимализм. Плотный хлопок.",
 subcategory:"zip_hoodies",
-photos:["https://iili.io/fVQ6E4j.webp","https://iili.io/fVQ6ba4.webp"]
+photos:[
+"https://iili.io/fVQ6E4j.webp",
+"https://iili.io/fVQ6ba4.webp",
+"https://iili.io/fVQPF6b.webp",
+"https://iili.io/fVQPuMg.webp",
+"https://iili.io/fVQP0NI.webp"
+]
 },
 {
 name:"Зип худи No Faith Studio boxy crop fit",
@@ -168,24 +203,37 @@ price:4100,
 status:"В наличии",
 description:"Y2K / Opium стиль.",
 subcategory:"zip_hoodies",
-photos:["https://iili.io/fXB5Ctj.jpg","https://iili.io/fVQ6zEG.webp"]
+photos:[
+"https://iili.io/fXB5Ctj.jpg",
+"https://iili.io/fXqKi8B.webp",
+"https://iili.io/fXqfRte.webp"
+]
 },
 {
 name:"Лонгслив Derschutze crop fit",
 price:3890,
 status:"В наличии",
-description:"Эксклюзив. Размер M.",
+description:"Эксклюзивная вышивка.",
 subcategory:"longsleeves",
-photos:["https://iili.io/fVQgdrl.webp","https://iili.io/fVQrMMb.webp"]
+photos:[
+"https://iili.io/fVQgdrl.webp",
+"https://iili.io/fVQgbaV.webp",
+"https://iili.io/fVQrMMb.webp",
+"https://iili.io/fVQrkDF.webp",
+"https://iili.io/fVQ4JJ2.webp",
+"https://iili.io/fVQ4I5B.webp"
+]
 }
 ];
 
 const catalog=document.getElementById("catalog");
-const gallery=document.getElementById("gallery");
 const track=document.getElementById("track");
+const gallery=document.getElementById("gallery");
 const info=document.getElementById("info");
+const dots=document.getElementById("dots");
 
-let index=0,startX=0,scale=1,current=null;
+let index=0,startX=0,isDown=false,scale=1,tx=0,ty=0;
+let currentProduct=null;
 
 function render(list){
   catalog.innerHTML="";
@@ -198,7 +246,6 @@ function render(list){
         <div>${p.name}</div>
         <div class="price">${p.price} ₽</div>
         <div class="status">${p.status}</div>
-        <div>${p.description}</div>
       </div>`;
     c.onclick=()=>openGallery(p);
     catalog.appendChild(c);
@@ -206,15 +253,19 @@ function render(list){
 }
 
 function openGallery(p){
-  current=p;
+  currentProduct=p;
   track.innerHTML="";
-  p.photos.forEach(src=>{
+  dots.innerHTML="";
+  p.photos.forEach((src,i)=>{
     const s=document.createElement("div");
     s.className="slide";
-    s.innerHTML=`<img src="${src}" alt="">`;
+    s.innerHTML=`<img src="${src}">`;
     track.appendChild(s);
+    const d=document.createElement("div");
+    d.className="dot"+(i===0?" active":"");
+    dots.appendChild(d);
   });
-  index=0;scale=1;
+  index=0;scale=1;tx=ty=0;
   update();
   info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽<br>${p.status}<br>${p.description}`;
   gallery.style.display="block";
@@ -222,31 +273,50 @@ function openGallery(p){
 
 function update(){
   track.style.transform=`translateX(${-index*innerWidth}px)`;
-  track.querySelectorAll("img").forEach(img=>img.style.transform="scale(1)");
+  [...dots.children].forEach((d,i)=>d.classList.toggle("active",i===index));
+  const img=track.children[index].querySelector("img");
+  img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
 }
 
-track.addEventListener("touchstart",e=>startX=e.touches[0].clientX);
-track.addEventListener("touchend",e=>{
-  const dx=e.changedTouches[0].clientX-startX;
-  if(Math.abs(dx)>50){
+track.addEventListener("mousedown",e=>{isDown=true;startX=e.clientX});
+window.addEventListener("mouseup",()=>isDown=false);
+track.addEventListener("mousemove",e=>{
+  if(!isDown||scale!==1)return;
+  let dx=e.clientX-startX;
+  if(Math.abs(dx)>80){
     index+=dx<0?1:-1;
     index=Math.max(0,Math.min(index,track.children.length-1));
+    startX=e.clientX;
     update();
   }
 });
 
+track.addEventListener("wheel",e=>{
+  e.preventDefault();
+  scale=Math.min(3,Math.max(1,scale+(e.deltaY<0?0.2:-0.2)));
+  update();
+},{passive:false});
+
 track.addEventListener("dblclick",()=>{
-  const img=track.children[index].querySelector("img");
   scale=scale===1?2:1;
-  img.style.transform=`scale(${scale})`;
+  tx=ty=0;
+  update();
 });
 
-function closeGallery(){gallery.style.display="none";scale=1}
+function closeGallery(){
+  gallery.style.display="none";
+  scale=1;
+}
+
 function openCats(){overlay.style.display="block"}
 function closeCats(){overlay.style.display="none"}
-function filter(c){render(products.filter(p=>p.subcategory===c));closeCats()}
+function filter(c){
+  render(products.filter(p=>p.subcategory===c));
+  closeCats();
+}
 
 render(products);
 </script>
+
 </body>
 </html>
