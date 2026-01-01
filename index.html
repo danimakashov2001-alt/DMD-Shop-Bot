@@ -33,6 +33,29 @@ button{
   color:#fff;
 }
 
+/* CATEGORY PANEL */
+#categories{
+  display:none;
+  padding:14px;
+}
+.cat{
+  margin-bottom:10px;
+}
+.cat-title{
+  font-weight:600;
+  cursor:pointer;
+}
+.subcats{
+  margin-top:6px;
+  display:none;
+}
+.subcats div{
+  font-size:13px;
+  padding:4px 0;
+  cursor:pointer;
+  color:#ccc;
+}
+
 /* CATALOG */
 .catalog{
   display:grid;
@@ -80,32 +103,24 @@ button{
   object-fit:contain;
   transform-origin:0 0;
   will-change:transform;
-  user-select:none;
-  cursor:grab;
 }
 
 /* UI */
-.close{
-  position:absolute;
-  top:14px;
-  right:18px;
-  font-size:26px;
-  cursor:pointer;
-  z-index:10;
-}
-
-.arrow{
-  position:absolute;
-  top:50%;
-  transform:translateY(-50%);
-  font-size:36px;
-  padding:12px;
-  cursor:pointer;
-  z-index:10;
-  user-select:none;
-}
+.close{position:absolute;top:14px;right:18px;font-size:26px;z-index:10}
+.arrow{position:absolute;top:50%;transform:translateY(-50%);font-size:36px;padding:12px;z-index:10}
 .arrow.left{left:10px}
 .arrow.right{right:10px}
+
+.dots{
+  position:absolute;
+  bottom:70px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:6px;
+}
+.dot{width:6px;height:6px;border-radius:50%;background:#555}
+.dot.active{background:#fff}
 
 .info{
   position:absolute;
@@ -116,22 +131,6 @@ button{
   padding:12px;
   font-size:14px;
 }
-
-.dots{
-  position:absolute;
-  bottom:70px;
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  gap:6px;
-}
-.dot{
-  width:6px;
-  height:6px;
-  border-radius:50%;
-  background:#555;
-}
-.dot.active{background:#fff}
 </style>
 </head>
 
@@ -139,9 +138,10 @@ button{
 
 <header>
   <h3>🛍 Каталог</h3>
-  <button>Категории</button>
+  <button onclick="toggleCategories()">Категории</button>
 </header>
 
+<div id="categories"></div>
 <div class="catalog" id="catalog"></div>
 
 <div id="gallery">
@@ -212,68 +212,91 @@ photos:[
 }
 ];
 
+/* ================= CATEGORIES ================= */
+const categories={
+  "Худи":["zip_hoodies"],
+  "Лонгсливы":["longsleeves"]
+};
+
+const catBox=document.getElementById("categories");
+let catOpen=false;
+
+function toggleCategories(){
+  catOpen=!catOpen;
+  catBox.style.display=catOpen?"block":"none";
+  if(catOpen) renderCategories();
+  renderCatalog(products);
+}
+
+function renderCategories(){
+  catBox.innerHTML="";
+  Object.entries(categories).forEach(([cat,subs])=>{
+    const c=document.createElement("div");
+    c.className="cat";
+    c.innerHTML=`<div class="cat-title">${cat}</div>`;
+    const s=document.createElement("div");
+    s.className="subcats";
+    subs.forEach(sub=>{
+      const d=document.createElement("div");
+      d.textContent=sub;
+      d.onclick=()=>renderCatalog(products.filter(p=>p.subcategory===sub));
+      s.appendChild(d);
+    });
+    c.querySelector(".cat-title").onclick=()=>s.style.display=s.style.display==="block"?"none":"block";
+    c.appendChild(s);
+    catBox.appendChild(c);
+  });
+}
+
 /* ================= CATALOG ================= */
 const catalog=document.getElementById("catalog");
-products.forEach(p=>{
-  const c=document.createElement("div");
-  c.className="card";
-  c.innerHTML=`
-    <img src="${p.photos[0]}">
-    <div class="card-body">
-      <div>${p.name}</div>
-      <div class="price">${p.price} ₽</div>
-      <div class="status">${p.status}</div>
-    </div>`;
-  c.onclick=()=>openGallery(p);
-  catalog.appendChild(c);
-});
+function renderCatalog(list){
+  catalog.innerHTML="";
+  list.forEach(p=>{
+    const c=document.createElement("div");
+    c.className="card";
+    c.innerHTML=`
+      <img src="${p.photos[0]}">
+      <div class="card-body">
+        <div>${p.name}</div>
+        <div class="price">${p.price} ₽</div>
+        <div class="status">${p.status}</div>
+      </div>`;
+    c.onclick=()=>openGallery(p);
+    catalog.appendChild(c);
+  });
+}
+renderCatalog(products);
 
-/* ================= GALLERY CORE ================= */
+/* ================= GALLERY (iOS-LIKE) ================= */
 const gallery=document.getElementById("gallery");
 const viewer=document.getElementById("viewer");
 const dots=document.getElementById("dots");
 const info=document.getElementById("info");
 
-let photos=[],index=0;
-let img,scale=1,tx=0,ty=0;
-let startX=0,startY=0;
-let pinchStart=0,startScale=1;
-let dragging=false;
-let lastTap=0;
+let photos=[],index=0,img;
+let scale=1,tx=0,ty=0;
+let startX=0,startY=0,pinchStart=0,startScale=1,lastTap=0;
 
-/* OPEN / CLOSE */
 function openGallery(p){
-  photos=p.photos;
-  index=0;
+  photos=p.photos;index=0;
   gallery.style.display="block";
   load();
-  info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽<br>${p.status}<br>${p.description}`;
+  info.innerHTML=`<b>${p.name}</b><br>${p.price} ₽`;
 }
-function closeGallery(){
-  gallery.style.display="none";
-}
+function closeGallery(){gallery.style.display="none"}
 
-/* LOAD */
 function load(){
   viewer.innerHTML="";
   img=document.createElement("img");
   img.src=photos[index];
   viewer.appendChild(img);
-  reset();
-  renderDots();
+  scale=1;tx=ty=0;
+  apply();renderDots();
 }
-function reset(){
-  scale=1;tx=0;ty=0;
-  apply();
-}
-function apply(){
-  img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
-}
-
-/* NAV */
+function apply(){img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`}
 function prev(){if(index>0){index--;load()}}
 function next(){if(index<photos.length-1){index++;load()}}
-
 function renderDots(){
   dots.innerHTML="";
   photos.forEach((_,i)=>{
@@ -283,34 +306,7 @@ function renderDots(){
   });
 }
 
-/* ================= DESKTOP ================= */
-gallery.addEventListener("wheel",e=>{
-  e.preventDefault();
-  const rect=img.getBoundingClientRect();
-  const cx=e.clientX-rect.left;
-  const cy=e.clientY-rect.top;
-  const prev=scale;
-  scale=Math.min(4,Math.max(1,scale+(e.deltaY<0?0.25:-0.25)));
-  tx-=cx*(scale/prev-1);
-  ty-=cy*(scale/prev-1);
-  apply();
-},{passive:false});
-
-viewer.addEventListener("mousedown",e=>{
-  if(scale===1)return;
-  dragging=true;
-  startX=e.clientX-tx;
-  startY=e.clientY-ty;
-});
-window.addEventListener("mousemove",e=>{
-  if(!dragging)return;
-  tx=e.clientX-startX;
-  ty=e.clientY-startY;
-  apply();
-});
-window.addEventListener("mouseup",()=>dragging=false);
-
-/* ================= TOUCH (iOS) ================= */
+/* TOUCH PERFECT */
 viewer.addEventListener("touchstart",e=>{
   if(e.touches.length===2){
     pinchStart=Math.hypot(
@@ -319,32 +315,35 @@ viewer.addEventListener("touchstart",e=>{
     );
     startScale=scale;
   }else{
-    startX=e.touches[0].clientX;
-    startY=e.touches[0].clientY;
+    startX=e.touches[0].clientX-tx;
+    startY=e.touches[0].clientY-ty;
   }
-});
+},{passive:false});
 
 viewer.addEventListener("touchmove",e=>{
+  e.preventDefault();
   if(e.touches.length===2){
     const d=Math.hypot(
       e.touches[0].clientX-e.touches[1].clientX,
       e.touches[0].clientY-e.touches[1].clientY
     );
     scale=Math.min(4,Math.max(1,startScale*d/pinchStart));
-    apply();
+  }else if(scale>1){
+    tx=e.touches[0].clientX-startX;
+    ty=e.touches[0].clientY-startY;
   }
-});
+  apply();
+},{passive:false});
 
 viewer.addEventListener("touchend",e=>{
   const now=Date.now();
-  if(now-lastTap<280){
+  if(now-lastTap<300){
     scale=scale===1?2:1;
-    tx=ty=0;
-    apply();
+    tx=ty=0;apply();
   }
   lastTap=now;
 
-  if(e.changedTouches[0]){
+  if(scale===1 && e.changedTouches[0]){
     const dx=e.changedTouches[0].clientX-startX;
     const dy=e.changedTouches[0].clientY-startY;
     if(Math.abs(dx)>80)dx<0?next():prev();
