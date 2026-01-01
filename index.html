@@ -341,6 +341,7 @@ const total=document.getElementById("total");
 let currentProduct=null;
 let photos=[],index=0,img;
 let scale=1,tx=0,ty=0;
+let zoomOffsetX=0,zoomOffsetY=0; // Сохраняем смещение центра зума
 
 // Touch variables
 let touchStartX=0,touchStartY=0;
@@ -386,6 +387,8 @@ function reset(){
   scale=1;
   tx=0;
   ty=0;
+  zoomOffsetX=0;
+  zoomOffsetY=0;
   apply();
 }
 
@@ -446,7 +449,6 @@ gallery.addEventListener("wheel",e=>{
   e.preventDefault();
   
   const viewerRect=viewer.getBoundingClientRect();
-  const imgRect=img.getBoundingClientRect();
   
   const cursorX=e.clientX-viewerRect.left;
   const cursorY=e.clientY-viewerRect.top;
@@ -456,14 +458,17 @@ gallery.addEventListener("wheel",e=>{
   scale=Math.min(4,Math.max(1,scale+delta));
   
   if(scale>1){
-    const centerOffsetX=cursorX-viewerRect.width/2;
-    const centerOffsetY=cursorY-viewerRect.height/2;
+    // Используем сохранённые смещения если они есть, иначе считаем от курсора
+    const centerOffsetX=zoomOffsetX!==0?zoomOffsetX:(cursorX-viewerRect.width/2);
+    const centerOffsetY=zoomOffsetY!==0?zoomOffsetY:(cursorY-viewerRect.height/2);
     
-    tx=-centerOffsetX*(scale-prevScale)/(prevScale);
-    ty=-centerOffsetY*(scale-prevScale)/(prevScale);
+    tx=-centerOffsetX*(scale/prevScale);
+    ty=-centerOffsetY*(scale/prevScale);
   }else{
     tx=0;
     ty=0;
+    zoomOffsetX=0;
+    zoomOffsetY=0;
   }
   
   apply();
@@ -507,23 +512,27 @@ viewer.addEventListener("dblclick",e=>{
   if(!img) return;
   
   const viewerRect=viewer.getBoundingClientRect();
-  const imgRect=img.getBoundingClientRect();
   
   const cursorX=e.clientX-viewerRect.left;
   const cursorY=e.clientY-viewerRect.top;
   
   const prevScale=scale;
-  scale=scale===1?2:1;
   
-  if(scale>1){
-    const centerOffsetX=cursorX-viewerRect.width/2;
-    const centerOffsetY=cursorY-viewerRect.height/2;
+  // Toggle зум
+  if(scale===1){
+    scale=2;
+    // Сохраняем смещение от центра
+    zoomOffsetX=cursorX-viewerRect.width/2;
+    zoomOffsetY=cursorY-viewerRect.height/2;
     
-    tx=-centerOffsetX;
-    ty=-centerOffsetY;
+    tx=-zoomOffsetX;
+    ty=-zoomOffsetY;
   }else{
+    scale=1;
     tx=0;
     ty=0;
+    zoomOffsetX=0;
+    zoomOffsetY=0;
   }
   
   apply();
@@ -663,15 +672,20 @@ function handleDoubleTap(x,y){
   const offsetX=x-viewerRect.left-viewerRect.width/2;
   const offsetY=y-viewerRect.top-viewerRect.height/2;
   
-  const prevScale=scale;
-  scale=scale===1?2:1;
-  
-  if(scale>1){
+  if(scale===1){
+    // Первый тап - увеличиваем
+    scale=2;
+    zoomOffsetX=offsetX;
+    zoomOffsetY=offsetY;
     tx=-offsetX;
     ty=-offsetY;
   }else{
+    // Повторный тап - возвращаем в исходное состояние
+    scale=1;
     tx=0;
     ty=0;
+    zoomOffsetX=0;
+    zoomOffsetY=0;
   }
   
   apply();
