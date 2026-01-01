@@ -10,6 +10,13 @@
 :root { --accent:#c49a6c }
 *{margin:0;padding:0;box-sizing:border-box}
 
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+}
+
 body{
   font-family:-apple-system,BlinkMacSystemFont,Arial;
   background:#0b0b0b;
@@ -39,12 +46,15 @@ button{
   grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
   gap:14px;
   padding:14px;
+  overflow-y:auto;
+  height:calc(100vh - 46px);
 }
 .card{
   background:#fff;
   color:#000;
   border-radius:16px;
   overflow:hidden;
+  cursor:pointer;
 }
 .card img{
   width:100%;
@@ -60,12 +70,33 @@ button{
   background:#000;
   display:none;
   z-index:100;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+}
+
+.gallery-container{
+  position:relative;
+  width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+
+.viewer-wrapper{
+  flex:1;
+  position:relative;
+  overflow:hidden;
+  width:100%;
+  height:100%;
 }
 
 .viewer{
   position:absolute;
   inset:0;
   overflow:hidden;
+  width:100%;
+  height:100%;
 }
 
 .viewer img{
@@ -75,41 +106,79 @@ button{
   width:100%;
   height:100%;
   object-fit:contain;
-  transform-origin:0 0;
+  transform-origin:center center;
   user-select:none;
+  -webkit-user-select:none;
+  -webkit-touch-callout:none;
 }
 
 /* UI */
-.close{
+.gallery-header{
   position:absolute;
-  top:14px;
-  right:18px;
-  font-size:26px;
-  z-index:10;
+  top:0;
+  left:0;
+  right:0;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px;
+  background:linear-gradient(180deg,rgba(0,0,0,.7) 0%,transparent 100%);
+  z-index:20;
+  height:60px;
 }
+
+.close{
+  font-size:26px;
+  cursor:pointer;
+  width:40px;
+  height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  -webkit-user-select:none;
+  user-select:none;
+}
+
+.counter{
+  font-size:14px;
+  background:rgba(0,0,0,.5);
+  padding:6px 12px;
+  border-radius:20px;
+}
+
 .arrow{
   position:absolute;
   top:50%;
   transform:translateY(-50%);
-  font-size:36px;
+  font-size:40px;
   padding:12px;
-  z-index:10;
+  z-index:15;
   user-select:none;
+  -webkit-user-select:none;
+  cursor:pointer;
+  width:50px;
+  height:50px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 .arrow.left{left:10px}
 .arrow.right{right:10px}
 
 .dots{
   position:absolute;
-  bottom:70px;
+  bottom:100px;
   left:50%;
   transform:translateX(-50%);
   display:flex;
-  gap:6px;
+  gap:8px;
+  z-index:15;
 }
 .dot{
-  width:6px;height:6px;border-radius:50%;
-  background:#555;
+  width:8px;height:8px;border-radius:50%;
+  background:rgba(255,255,255,.4);
+  cursor:pointer;
+  transition:background 0.2s;
 }
 .dot.active{background:#fff}
 
@@ -117,9 +186,38 @@ button{
   position:absolute;
   bottom:0;
   left:0;right:0;
-  background:rgba(0,0,0,.7);
-  padding:12px;
+  background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.8) 100%);
+  padding:14px;
+  font-size:13px;
+  z-index:15;
+  max-height:25%;
+  overflow-y:auto;
+}
+
+.info-title{
+  font-weight:600;
+  margin-bottom:6px;
   font-size:14px;
+}
+
+.info-price{
+  color:var(--accent);
+  font-weight:600;
+  margin-bottom:6px;
+}
+
+.info-desc{
+  font-size:12px;
+  color:#ccc;
+  line-height:1.4;
+}
+
+.info-status{
+  margin-top:8px;
+  padding:6px 0;
+  border-top:1px solid rgba(255,255,255,.1);
+  font-size:12px;
+  color:#7cb342;
 }
 </style>
 </head>
@@ -133,12 +231,19 @@ button{
 <div class="catalog" id="catalog"></div>
 
 <div id="gallery">
-  <div class="close" onclick="closeGallery()">✕</div>
-  <div class="arrow left" onclick="prev()">‹</div>
-  <div class="arrow right" onclick="next()">›</div>
-  <div class="viewer" id="viewer"></div>
-  <div class="dots" id="dots"></div>
-  <div class="info" id="info"></div>
+  <div class="gallery-container">
+    <div class="gallery-header">
+      <div class="close" onclick="closeGallery()">✕</div>
+      <div class="counter"><span id="current">1</span>/<span id="total">1</span></div>
+    </div>
+    <div class="viewer-wrapper">
+      <div class="arrow left" onclick="prev()">‹</div>
+      <div class="arrow right" onclick="next()">›</div>
+      <div class="viewer" id="viewer"></div>
+      <div class="dots" id="dots"></div>
+    </div>
+    <div class="info" id="info"></div>
+  </div>
 </div>
 
 <script>
@@ -206,7 +311,7 @@ products.forEach(p=>{
   const c=document.createElement("div");
   c.className="card";
   c.innerHTML=`
-    <img src="${p.photos[0]}">
+    <img src="${p.photos[0]}" alt="${p.name}">
     <div class="card-body">${p.name}<br>${p.price} ₽</div>`;
   c.onclick=()=>openGallery(p);
   catalog.appendChild(c);
@@ -217,36 +322,50 @@ const gallery=document.getElementById("gallery");
 const viewer=document.getElementById("viewer");
 const dots=document.getElementById("dots");
 const info=document.getElementById("info");
+const current=document.getElementById("current");
+const total=document.getElementById("total");
 
+let currentProduct=null;
 let photos=[],index=0,img;
 let scale=1,tx=0,ty=0;
 let startX=0,startY=0;
+let startTx=0,startTy=0;
 let startDist=0,startScale=1;
 let lastTap=0;
+let isZoomed=false;
 
 function openGallery(p){
+  currentProduct=p;
   photos=p.photos;
   index=0;
   gallery.style.display="block";
+  document.body.style.overflow="hidden";
   load();
-  info.innerHTML=`${p.name} · ${p.price} ₽`;
+  updateInfo();
 }
 
 function closeGallery(){
   gallery.style.display="none";
+  document.body.style.overflow="auto";
+  currentProduct=null;
 }
 
 function load(){
   viewer.innerHTML="";
   img=document.createElement("img");
   img.src=photos[index];
+  img.draggable=false;
   viewer.appendChild(img);
   reset();
   renderDots();
+  updateCounter();
 }
 
 function reset(){
-  scale=1;tx=0;ty=0;
+  scale=1;
+  tx=0;
+  ty=0;
+  isZoomed=false;
   apply();
 }
 
@@ -254,78 +373,168 @@ function apply(){
   img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
 }
 
+function updateCounter(){
+  current.textContent=index+1;
+  total.textContent=photos.length;
+}
+
+function updateInfo(){
+  if(!currentProduct) return;
+  info.innerHTML=`
+    <div class="info-title">${currentProduct.name}</div>
+    <div class="info-price">${currentProduct.price} ₽</div>
+    <div class="info-desc">${currentProduct.description}</div>
+    <div class="info-status">${currentProduct.status}</div>
+  `;
+}
+
 /* NAV */
-function prev(){ if(index>0){index--;load()} }
-function next(){ if(index<photos.length-1){index++;load()} }
+function prev(){ 
+  if(index>0){
+    index--;
+    load();
+  } 
+}
+
+function next(){ 
+  if(index<photos.length-1){
+    index++;
+    load();
+  } 
+}
+
+function goToPhoto(i){
+  index=i;
+  load();
+}
 
 function renderDots(){
   dots.innerHTML="";
   photos.forEach((_,i)=>{
     const d=document.createElement("div");
     d.className="dot"+(i===index?" active":"");
+    d.onclick=()=>goToPhoto(i);
     dots.appendChild(d);
   });
 }
 
-/* DESKTOP ZOOM */
+/* DESKTOP ZOOM - WHEEL */
 gallery.addEventListener("wheel",e=>{
+  if(!img) return;
   e.preventDefault();
   const r=img.getBoundingClientRect();
   const cx=e.clientX-r.left;
   const cy=e.clientY-r.top;
+  const delta=e.deltaY<0?1:-1;
   const prev=scale;
-  scale=Math.min(4,Math.max(1,scale+(e.deltaY<0?0.25:-0.25)));
-  tx-=cx*(scale/prev-1);
-  ty-=cy*(scale/prev-1);
+  scale=Math.min(4,Math.max(1,scale+delta*0.25));
+  if(scale>1){
+    tx-=cx*(scale/prev-1);
+    ty-=cy*(scale/prev-1);
+  }
   apply();
 },{passive:false});
 
-/* TOUCH — iOS STYLE */
+/* TOUCH GESTURES */
 viewer.addEventListener("touchstart",e=>{
+  if(!img) return;
+  
   if(e.touches.length===2){
+    // Pinch zoom
     startDist=Math.hypot(
       e.touches[0].clientX-e.touches[1].clientX,
       e.touches[0].clientY-e.touches[1].clientY
     );
     startScale=scale;
-  }else{
-    startX=e.touches[0].clientX-tx;
-    startY=e.touches[0].clientY-ty;
+    startTx=tx;
+    startTy=ty;
+    isZoomed=true;
+  }else if(e.touches.length===1){
+    // Pan/swipe
+    startX=e.touches[0].clientX;
+    startY=e.touches[0].clientY;
+    startTx=tx;
+    startTy=ty;
   }
 },{passive:true});
 
 viewer.addEventListener("touchmove",e=>{
+  if(!img) return;
+  
   if(e.touches.length===2){
+    // Pinch zoom
     e.preventDefault();
-    const d=Math.hypot(
+    const newDist=Math.hypot(
       e.touches[0].clientX-e.touches[1].clientX,
       e.touches[0].clientY-e.touches[1].clientY
     );
-    scale=Math.min(4,Math.max(1,startScale*d/startDist));
+    
+    const ratio=newDist/startDist;
+    scale=Math.min(4,Math.max(1,startScale*ratio));
+    
+    // Center point for zoom
+    const centerX=(e.touches[0].clientX+e.touches[1].clientX)/2;
+    const centerY=(e.touches[0].clientY+e.touches[1].clientY)/2;
+    const rect=img.getBoundingClientRect();
+    const cx=centerX-rect.left;
+    const cy=centerY-rect.top;
+    
+    tx=startTx-cx*(scale/startScale-1);
+    ty=startTy-cy*(scale/startScale-1);
+    
     apply();
-  }else if(scale>1){
+  }else if(e.touches.length===1 && isZoomed){
+    // Pan while zoomed
     e.preventDefault();
-    tx=e.touches[0].clientX-startX;
-    ty=e.touches[0].clientY-startY;
+    tx=startTx+(e.touches[0].clientX-startX);
+    ty=startTy+(e.touches[0].clientY-startY);
     apply();
   }
 },{passive:false});
 
 viewer.addEventListener("touchend",e=>{
-  const now=Date.now();
-  if(now-lastTap<300){
-    const t=e.changedTouches[0];
-    const rect=img.getBoundingClientRect();
-    const cx=t.clientX-rect.left;
-    const cy=t.clientY-rect.top;
-    const prev=scale;
-    scale=scale===1?2:1;
-    tx-=cx*(scale/prev-1);
-    ty-=cy*(scale/prev-1);
-    apply();
+  if(!img) return;
+  
+  if(e.touches.length===0){
+    const now=Date.now();
+    const touch=e.changedTouches[0];
+    
+    // Double tap zoom
+    if(now-lastTap<300 && e.touches.length===0){
+      const rect=img.getBoundingClientRect();
+      const cx=touch.clientX-rect.left;
+      const cy=touch.clientY-rect.top;
+      const prev=scale;
+      scale=scale===1?2:1;
+      if(scale>1){
+        tx=-cx*(scale/prev-1);
+        ty=-cy*(scale/prev-1);
+      }else{
+        tx=0;
+        ty=0;
+      }
+      apply();
+    }
+    
+    lastTap=now;
   }
-  lastTap=now;
-});
+  
+  if(e.touches.length===1){
+    isZoomed=false;
+    startX=e.touches[0].clientX;
+    startY=e.touches[0].clientY;
+    startTx=tx;
+    startTy=ty;
+  }
+},{passive:false});
+
+// Prevent default iOS behavior
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+document.addEventListener('touchmove',e=>{
+  if(gallery.style.display==="block"){
+    e.preventDefault();
+  }
+},{passive:false});
 </script>
 
 </body>
