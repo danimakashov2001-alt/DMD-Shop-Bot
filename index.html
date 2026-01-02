@@ -74,7 +74,6 @@
   .card:hover{transform:scale(1.03);}
   .card img{ width:100%; height:210px; object-fit:cover; display:block; }
 
-  /* Блок текста темнее */
   .card-body{
     position:absolute;
     left:0; right:0; bottom:0;
@@ -136,36 +135,42 @@
   .is-hidden{ display:none !important; }
   .empty{ padding:14px; color:rgba(255,255,255,0.85); font-size:13px; }
 
-  /* ===== PhotoSwipe: caption снизу (вставляем вручную) ===== */
-  .pswp__custom-caption{
-    position:absolute;
+  /* =========================================================
+     ✅ НАДЁЖНЫЙ CAPTION: position: fixed + в body
+     НЕ зависит от структуры PhotoSwipe
+     ========================================================= */
+  #pswpCaptionFixed{
+    position:fixed;
     left:0; right:0; bottom:0;
-    z-index: 99999;
+    z-index: 2147483647; /* максимально поверх всего */
     box-sizing:border-box;
 
     padding:14px 16px;
     padding-bottom: calc(14px + env(safe-area-inset-bottom));
-
     background:linear-gradient(transparent, rgba(0,0,0,0.92));
     color:#fff;
+
     font-size:13px;
-    transition:opacity .18s ease;
+    line-height:1.35;
     pointer-events:none;
     text-shadow: 0 1px 2px rgba(0,0,0,0.65);
-  }
-  .pswp__custom-caption.pswp-caption--hidden{ opacity:0; }
 
-  .pswp__custom-caption .title{
+    opacity:0;             /* по умолчанию скрыт */
+    transition:opacity .18s ease;
+  }
+  #pswpCaptionFixed.visible{ opacity:1; }
+  #pswpCaptionFixed.hiddenByZoom{ opacity:0; }
+
+  #pswpCaptionFixed .title{
     font-size:15px;
     font-weight:900;
     margin-bottom:6px;
   }
-  .pswp__custom-caption .desc{
-    white-space:pre-line;  /* ✅ переносы */
-    line-height:1.35;
+  #pswpCaptionFixed .desc{
+    white-space:pre-line;
     opacity:0.95;
   }
-  .pswp__custom-caption .meta{
+  #pswpCaptionFixed .meta{
     margin-top:8px;
     font-weight:900;
     display:flex;
@@ -173,8 +178,8 @@
     align-items:center;
     flex-wrap:wrap;
   }
-  .pswp__custom-caption .instock{ color:#38d66b; }
-  .pswp__custom-caption .inway{ color:#ffd54a; }
+  #pswpCaptionFixed .instock{ color:#38d66b; }
+  #pswpCaptionFixed .inway{ color:#ffd54a; }
 </style>
 </head>
 
@@ -192,6 +197,13 @@
 <div class="page is-hidden" id="categoriesPage">
   <div class="categories" id="categories"></div>
   <div class="hint">Нажми на подкатегорию — покажу товары.</div>
+</div>
+
+<!-- ✅ caption фиксированный в body -->
+<div id="pswpCaptionFixed">
+  <div class="title" id="capTitle"></div>
+  <div class="desc" id="capDesc"></div>
+  <div class="meta" id="capMeta"></div>
 </div>
 
 <script type="module">
@@ -315,10 +327,16 @@ const catalog = document.getElementById("catalog");
 const categoriesEl = document.getElementById("categories");
 const emptyState = document.getElementById("emptyState");
 
+/* caption элементы */
+const captionBox = document.getElementById('pswpCaptionFixed');
+const capTitle = document.getElementById('capTitle');
+const capDesc  = document.getElementById('capDesc');
+const capMeta  = document.getElementById('capMeta');
+
 let currentFilter = null;
 let currentProduct = null;
 
-/* ====== Рендер товаров (description в ленте) ====== */
+/* ====== Рендер товаров ====== */
 function renderProducts() {
   catalog.innerHTML = "";
   emptyState.classList.add("is-hidden");
@@ -404,7 +422,36 @@ categoriesEl.addEventListener("click", (e) => {
   closeCategories();
 });
 
-/* ====== PhotoSwipe (caption вставляем вручную) ====== */
+/* ====== Caption управление ====== */
+function showCaptionForProduct(product) {
+  capTitle.textContent = product?.name ?? '';
+
+  const fullText = (product?.fullDescription && String(product.fullDescription).trim())
+    ? product.fullDescription
+    : (product?.description ?? '');
+  capDesc.textContent = fullText;
+
+  const stCls = statusClass(product?.status);
+  const statusHtml = product?.status ? `<span class="${stCls}">${product.status}</span>` : '';
+  const priceHtml = product?.price != null ? `<span>${product.price}</span>` : '';
+  capMeta.innerHTML = `${statusHtml}${priceHtml ? " • " + priceHtml : ""}`;
+
+  captionBox.classList.add('visible');
+  captionBox.classList.remove('hiddenByZoom');
+}
+
+function hideCaption() {
+  captionBox.classList.remove('visible');
+  captionBox.classList.remove('hiddenByZoom');
+}
+
+function syncCaptionVisibility(pswp) {
+  const z = pswp?.currZoomLevel || 1;
+  // видно только на 1x
+  captionBox.classList.toggle('hiddenByZoom', z > 1.02);
+}
+
+/* ====== PhotoSwipe ====== */
 const lightbox = new PhotoSwipeLightbox({
   pswpModule: () => import('https://unpkg.com/photoswipe@5/dist/photoswipe.esm.min.js'),
   wheelToZoom: true,
@@ -412,60 +459,12 @@ const lightbox = new PhotoSwipeLightbox({
   pswpOptions: { closeOnScroll: false }
 });
 
-function ensureCaption(pswp) {
-  // pswp.element — корневой элемент PhotoSwipe (самый надёжный для append)
-  const root = pswp.element || pswp.template || pswp.container;
-  if (!root) return null;
-
-  let cap = root.querySelector('#pswpCaption');
-  if (!cap) {
-    cap = document.createElement('div');
-    cap.className = 'pswp__custom-caption';
-    cap.id = 'pswpCaption';
-    cap.innerHTML = `
-      <div class="title" id="pswpTitle"></div>
-      <div class="desc" id="pswpDesc"></div>
-      <div class="meta" id="pswpMeta"></div>
-    `;
-    root.appendChild(cap);
-  }
-  return cap;
-}
-
-function fillCaption(product) {
-  const t = document.getElementById('pswpTitle');
-  const d = document.getElementById('pswpDesc');
-  const m = document.getElementById('pswpMeta');
-  if (!t || !d || !m) return;
-
-  t.textContent = product?.name ?? '';
-
-  // ✅ показываем fullDescription, fallback на description
-  const fullText = (product?.fullDescription && String(product.fullDescription).trim())
-    ? product.fullDescription
-    : (product?.description ?? "");
-  d.textContent = fullText;
-
-  const stCls = statusClass(product?.status);
-  const statusHtml = product?.status ? `<span class="${stCls}">${product.status}</span>` : '';
-  const priceHtml = product?.price != null ? `<span>${product.price}</span>` : '';
-  m.innerHTML = `${statusHtml}${priceHtml ? " • " + priceHtml : ""}`;
-}
-
-function syncCaptionVisibility(pswp) {
-  const cap = document.getElementById('pswpCaption');
-  if (!cap) return;
-  const z = pswp.currZoomLevel || 1;
-  cap.classList.toggle('pswp-caption--hidden', z > 1.02);
-}
-
 lightbox.on('open', () => {
   const pswp = lightbox.pswp;
 
-  // ✅ гарантированно создаём caption в DOM
+  // ВАЖНО: показываем caption после того, как открылся viewer
   requestAnimationFrame(() => {
-    ensureCaption(pswp);
-    fillCaption(currentProduct);
+    showCaptionForProduct(currentProduct);
     syncCaptionVisibility(pswp);
   });
 
@@ -476,10 +475,11 @@ lightbox.on('open', () => {
     pswp.zoomTo(scale, { x: pswp.viewportSize.x/2, y: pswp.viewportSize.y/2 });
   });
 
-  // на всякий случай: при закрытии убираем caption, чтобы не накапливался
+  pswp.on('close', () => {
+    hideCaption();
+  });
   pswp.on('destroy', () => {
-    const cap = document.getElementById('pswpCaption');
-    if (cap) cap.remove();
+    hideCaption();
   });
 });
 
