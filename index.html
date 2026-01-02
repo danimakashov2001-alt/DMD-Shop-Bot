@@ -14,7 +14,6 @@
     color:#fff;
     background: url("https://iili.io/fXfx3ep.jpg") center / cover no-repeat;
     background-color:#0b0b0b;
-    overscroll-behavior: none;
   }
   body::before{
     content:"";
@@ -53,7 +52,7 @@
 
   .page{ height:calc(100vh - 46px); overflow-y:auto; }
 
-  /* товары */
+  /* каталог */
   .catalog{
     padding:14px;
     display:grid;
@@ -74,6 +73,7 @@
   .card:hover{transform:scale(1.03);}
   .card img{ width:100%; height:210px; object-fit:cover; display:block; }
 
+  /* блок под фото темнее */
   .card-body{
     position:absolute;
     left:0; right:0; bottom:0;
@@ -93,7 +93,7 @@
   /* ✅ description в ленте */
   .short-desc{
     margin-top:6px;
-    opacity:0.9;
+    opacity:0.92;
     display:-webkit-box;
     -webkit-line-clamp:2;
     -webkit-box-orient:vertical;
@@ -102,10 +102,10 @@
     line-height:1.25;
   }
 
-  .status{ display:inline-block; margin-top:6px; font-weight:800; }
+  .status{ display:inline-block; margin-top:6px; font-weight:900; }
   .status.instock{ color:#38d66b; } /* зелёный */
   .status.inway{ color:#ffd54a; }   /* жёлтый */
-  .price{ margin-top:6px; font-weight:800; opacity:0.95; }
+  .price{ margin-top:6px; font-weight:900; opacity:0.95; }
 
   /* категории */
   .categories{ padding:14px; display:flex; flex-direction:column; gap:12px; }
@@ -117,7 +117,7 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
-  .cat-title{ font-weight:800; margin-bottom:10px; }
+  .cat-title{ font-weight:900; margin-bottom:10px; }
   .subcats{ display:flex; flex-wrap:wrap; gap:10px; }
   .chip{
     padding:8px 12px;
@@ -131,46 +131,43 @@
   .chip:active{ transform:scale(0.98); }
   .hint{ padding:0 14px 14px; color:rgba(255,255,255,0.78); font-size:12px; }
 
-  /* общие */
   .is-hidden{ display:none !important; }
   .empty{ padding:14px; color:rgba(255,255,255,0.85); font-size:13px; }
 
   /* =========================================================
-     ✅ НАДЁЖНЫЙ CAPTION: position: fixed + в body
-     НЕ зависит от структуры PhotoSwipe
+     ✅ Caption ВНУТРИ PhotoSwipe (pswp.element)
      ========================================================= */
-  #pswpCaptionFixed{
-    position:fixed;
+  .pswp__guru-caption{
+    position:absolute;
     left:0; right:0; bottom:0;
-    z-index: 2147483647; /* максимально поверх всего */
+    z-index: 100000; /* выше UI */
     box-sizing:border-box;
 
     padding:14px 16px;
     padding-bottom: calc(14px + env(safe-area-inset-bottom));
+
     background:linear-gradient(transparent, rgba(0,0,0,0.92));
     color:#fff;
-
     font-size:13px;
     line-height:1.35;
+
     pointer-events:none;
     text-shadow: 0 1px 2px rgba(0,0,0,0.65);
-
-    opacity:0;             /* по умолчанию скрыт */
     transition:opacity .18s ease;
+    opacity:1;
   }
-  #pswpCaptionFixed.visible{ opacity:1; }
-  #pswpCaptionFixed.hiddenByZoom{ opacity:0; }
+  .pswp__guru-caption.is-hidden-by-zoom{ opacity:0; }
 
-  #pswpCaptionFixed .title{
+  .pswp__guru-caption .title{
     font-size:15px;
     font-weight:900;
     margin-bottom:6px;
   }
-  #pswpCaptionFixed .desc{
-    white-space:pre-line;
-    opacity:0.95;
+  .pswp__guru-caption .desc{
+    white-space:pre-line; /* ✅ переносы */
+    opacity:0.96;
   }
-  #pswpCaptionFixed .meta{
+  .pswp__guru-caption .meta{
     margin-top:8px;
     font-weight:900;
     display:flex;
@@ -178,8 +175,8 @@
     align-items:center;
     flex-wrap:wrap;
   }
-  #pswpCaptionFixed .instock{ color:#38d66b; }
-  #pswpCaptionFixed .inway{ color:#ffd54a; }
+  .pswp__guru-caption .instock{ color:#38d66b; }
+  .pswp__guru-caption .inway{ color:#ffd54a; }
 </style>
 </head>
 
@@ -197,13 +194,6 @@
 <div class="page is-hidden" id="categoriesPage">
   <div class="categories" id="categories"></div>
   <div class="hint">Нажми на подкатегорию — покажу товары.</div>
-</div>
-
-<!-- ✅ caption фиксированный в body -->
-<div id="pswpCaptionFixed">
-  <div class="title" id="capTitle"></div>
-  <div class="desc" id="capDesc"></div>
-  <div class="meta" id="capMeta"></div>
 </div>
 
 <script type="module">
@@ -327,16 +317,10 @@ const catalog = document.getElementById("catalog");
 const categoriesEl = document.getElementById("categories");
 const emptyState = document.getElementById("emptyState");
 
-/* caption элементы */
-const captionBox = document.getElementById('pswpCaptionFixed');
-const capTitle = document.getElementById('capTitle');
-const capDesc  = document.getElementById('capDesc');
-const capMeta  = document.getElementById('capMeta');
-
 let currentFilter = null;
 let currentProduct = null;
 
-/* ====== Рендер товаров ====== */
+/* ====== Рендер товаров (description в ленте) ====== */
 function renderProducts() {
   catalog.innerHTML = "";
   emptyState.classList.add("is-hidden");
@@ -415,40 +399,59 @@ toggleBtn.addEventListener("click", () => {
 categoriesEl.addEventListener("click", (e) => {
   const chip = e.target.closest(".chip");
   if (!chip) return;
-
   const mapped = subcategoryMap[chip.dataset.subname];
   currentFilter = mapped || "__none__";
   renderProducts();
   closeCategories();
 });
 
-/* ====== Caption управление ====== */
-function showCaptionForProduct(product) {
-  capTitle.textContent = product?.name ?? '';
+/* =========================================================
+   ✅ ГУРУ-CAPTION: создаём/обновляем после afterInit
+   ========================================================= */
+function ensureGuruCaption(pswp) {
+  const root = pswp.element; // самый надёжный контейнер оверлея
+  if (!root) return null;
 
-  const fullText = (product?.fullDescription && String(product.fullDescription).trim())
+  let cap = root.querySelector('#guruCaption');
+  if (!cap) {
+    cap = document.createElement('div');
+    cap.id = 'guruCaption';
+    cap.className = 'pswp__guru-caption';
+    cap.innerHTML = `
+      <div class="title" id="guruTitle"></div>
+      <div class="desc" id="guruDesc"></div>
+      <div class="meta" id="guruMeta"></div>
+    `;
+    root.appendChild(cap);
+  }
+  return cap;
+}
+
+function fillGuruCaption(product) {
+  const t = document.getElementById('guruTitle');
+  const d = document.getElementById('guruDesc');
+  const m = document.getElementById('guruMeta');
+  if (!t || !d || !m) return;
+
+  t.textContent = product?.name ?? '';
+
+  // ✅ fullDescription в открытой карточке
+  const text = (product?.fullDescription && String(product.fullDescription).trim())
     ? product.fullDescription
     : (product?.description ?? '');
-  capDesc.textContent = fullText;
+  d.textContent = text;
 
   const stCls = statusClass(product?.status);
   const statusHtml = product?.status ? `<span class="${stCls}">${product.status}</span>` : '';
   const priceHtml = product?.price != null ? `<span>${product.price}</span>` : '';
-  capMeta.innerHTML = `${statusHtml}${priceHtml ? " • " + priceHtml : ""}`;
-
-  captionBox.classList.add('visible');
-  captionBox.classList.remove('hiddenByZoom');
+  m.innerHTML = `${statusHtml}${priceHtml ? " • " + priceHtml : ""}`;
 }
 
-function hideCaption() {
-  captionBox.classList.remove('visible');
-  captionBox.classList.remove('hiddenByZoom');
-}
-
-function syncCaptionVisibility(pswp) {
-  const z = pswp?.currZoomLevel || 1;
-  // видно только на 1x
-  captionBox.classList.toggle('hiddenByZoom', z > 1.02);
+function syncGuruCaptionVisibility(pswp) {
+  const cap = document.getElementById('guruCaption');
+  if (!cap) return;
+  const z = pswp.currZoomLevel || 1;
+  cap.classList.toggle('is-hidden-by-zoom', z > 1.02);
 }
 
 /* ====== PhotoSwipe ====== */
@@ -459,27 +462,27 @@ const lightbox = new PhotoSwipeLightbox({
   pswpOptions: { closeOnScroll: false }
 });
 
-lightbox.on('open', () => {
+lightbox.on('afterInit', () => {
   const pswp = lightbox.pswp;
 
-  // ВАЖНО: показываем caption после того, как открылся viewer
-  requestAnimationFrame(() => {
-    showCaptionForProduct(currentProduct);
-    syncCaptionVisibility(pswp);
-  });
+  // ✅ caption гарантированно создаётся ТОЛЬКО когда pswp уже готов
+  ensureGuruCaption(pswp);
+  fillGuruCaption(currentProduct);
+  syncGuruCaptionVisibility(pswp);
 
-  pswp.on('zoomPanUpdate', () => syncCaptionVisibility(pswp));
+  // обновляем при любом изменении зума/пана
+  pswp.on('zoomPanUpdate', () => syncGuruCaptionVisibility(pswp));
 
+  // даблтап как раньше
   pswp.on('doubleTap', () => {
     const scale = pswp.currZoomLevel > 1 ? 1 : 2;
     pswp.zoomTo(scale, { x: pswp.viewportSize.x/2, y: pswp.viewportSize.y/2 });
   });
 
-  pswp.on('close', () => {
-    hideCaption();
-  });
+  // очистка
   pswp.on('destroy', () => {
-    hideCaption();
+    const cap = document.getElementById('guruCaption');
+    if (cap) cap.remove();
   });
 });
 
