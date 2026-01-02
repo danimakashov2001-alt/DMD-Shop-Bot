@@ -1,31 +1,30 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <title>Каталог</title>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+<link rel="stylesheet" href="https://unpkg.com/photoswipe@5/dist/photoswipe.css">
 
 <style>
-:root { --accent:#c49a6c; }
-* { margin:0; padding:0; box-sizing:border-box; }
-
+*{margin:0;padding:0;box-sizing:border-box}
 html,body{
-  width:100%; height:100%;
+  width:100%;height:100%;
+  background:#0b0b0b;
+  color:#fff;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
-  background:#0b0b0b; color:#fff;
-  overflow:hidden;
 }
 
-/* ===== Каталог ===== */
 header{
   height:46px;
   display:flex;
   align-items:center;
   padding:0 14px;
   background:#111;
+  font-weight:600;
 }
+
 .catalog{
   height:calc(100vh - 46px);
   overflow-y:auto;
@@ -34,84 +33,39 @@ header{
   grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
   gap:14px;
 }
+
 .card{
   background:#fff;
+  color:#000;
   border-radius:16px;
   overflow:hidden;
-  color:#000;
 }
+
 .card img{
   width:100%;
   height:210px;
   object-fit:cover;
 }
+
 .card-body{
   padding:10px;
   font-size:13px;
 }
 
-/* ===== Галерея ===== */
-#gallery{
-  position:fixed;
-  inset:0;
-  background:#000;
-  display:none;
-  z-index:1000;
-}
-
-.swiper{
-  width:100%;
-  height:100%;
-}
-
-.swiper-slide{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.swiper-zoom-container{
-  width:100%;
-  height:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.swiper-zoom-container img{
-  max-width:100%;
-  max-height:100%;
-  object-fit:contain;
-  user-select:none;
-  touch-action:none;
-}
-
-.close{
+/* ===== Overlay описания ===== */
+.pswp__custom-info{
   position:absolute;
-  top:12px;
-  right:14px;
-  font-size:28px;
-  z-index:10;
-}
-
-.info{
-  position:absolute;
-  bottom:0;
   left:0;
   right:0;
+  bottom:0;
   padding:14px 16px;
   background:linear-gradient(transparent,rgba(0,0,0,.85));
   font-size:13px;
 }
-.info .price{
-  color:var(--accent);
-  font-weight:600;
-}
 
-/* Стрелки */
-.swiper-button-next,
-.swiper-button-prev{
-  color:#fff;
+.pswp__custom-info .price{
+  font-weight:600;
+  margin-top:6px;
 }
 </style>
 </head>
@@ -120,21 +74,12 @@ header{
 <header>🛍 Каталог</header>
 <div class="catalog" id="catalog"></div>
 
-<div id="gallery">
-  <div class="close" onclick="closeGallery()">✕</div>
+<!-- PhotoSwipe Root -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true"></div>
 
-  <div class="swiper" id="swiper">
-    <div class="swiper-wrapper" id="swiper-wrapper"></div>
-    <div class="swiper-button-prev"></div>
-    <div class="swiper-button-next"></div>
-  </div>
+<script type="module">
+import PhotoSwipeLightbox from 'https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.esm.js';
 
-  <div class="info" id="info"></div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-
-<script>
 const products=[
 {
 name:"Зип худи Zara Type crop fit (серый)",
@@ -192,93 +137,69 @@ photos:[
 }
 ];
 
-const catalog = document.getElementById("catalog");
-const gallery = document.getElementById("gallery");
-const wrapper = document.getElementById("swiper-wrapper");
-const info = document.getElementById("info");
+const catalog = document.getElementById('catalog');
 
-let swiper;
-
-products.forEach(p=>{
-  const c=document.createElement("div");
-  c.className="card";
-  c.innerHTML=`
+products.forEach((p,pi)=>{
+  const card=document.createElement('div');
+  card.className='card';
+  card.innerHTML=`
     <img src="${p.photos[0]}">
-    <div class="card-body">${p.name}<br>${p.price} ₽</div>
+    <div class="card-body">
+      ${p.name}<br>
+      ${p.price}
+    </div>
   `;
-  c.onclick=()=>openGallery(p);
-  catalog.appendChild(c);
+  card.onclick=()=>openGallery(pi);
+  catalog.appendChild(card);
 });
 
-function openGallery(product){
-  wrapper.innerHTML="";
+let lightbox;
 
-  product.photos.forEach(src=>{
-    const slide=document.createElement("div");
-    slide.className="swiper-slide";
-    slide.innerHTML=`
-      <div class="swiper-zoom-container">
-        <img src="${src}">
-      </div>
-    `;
-    wrapper.appendChild(slide);
+function openGallery(index){
+  if(lightbox) lightbox.destroy();
+
+  lightbox = new PhotoSwipeLightbox({
+    dataSource: products[index].photos.map(src=>({
+      src,
+      width:1600,
+      height:2000
+    })),
+    pswpModule: () => import('https://unpkg.com/photoswipe@5/dist/photoswipe.esm.js'),
+    wheelToZoom: true,
+    arrowKeys: true,
+    zoom: true,
+    close: true
   });
 
-  info.innerHTML=`
-    <div><b>${product.name}</b></div>
-    <div>${product.description}</div>
-    <div>${product.status}</div>
-    <div class="price">${product.price} ₽</div>
-  `;
-
-  gallery.style.display="block";
-
-  swiper = new Swiper("#swiper",{
-    slidesPerView:1,
-    resistanceRatio:0,
-    touchStartPreventDefault:false,
-
-    zoom:{
-      enabled:true,
-      maxRatio:4,
-      minRatio:1,
-      toggle:false,
-      limitToOriginalSize:true,
-      zoomedSlideClass:'swiper-slide-zoomed'
-    },
-
-    navigation:{
-      nextEl:".swiper-button-next",
-      prevEl:".swiper-button-prev"
-    },
-
-    on:{
-      doubleTap(){
-        swiper.zoom.toggle();
-      },
-      slideChange(){
-        swiper.zoom.out();
-      }
-    }
+  lightbox.on('uiRegister', () => {
+    lightbox.pswp.ui.registerElement({
+      name: 'custom-info',
+      order: 9,
+      isButton: false,
+      appendTo: 'root',
+      html: `
+        <div class="pswp__custom-info" id="pswp-info">
+          <div><b>${products[index].name}</b></div>
+          <div>${products[index].description}</div>
+          <div>${products[index].status}</div>
+          <div class="price">${products[index].price}</div>
+        </div>
+      `
+    });
   });
 
-  swiper.zoom.enable();
+  lightbox.on('change', () => {
+    const info=document.getElementById('pswp-info');
+    if(info) info.style.display='block';
+  });
 
-  /* Wheel zoom */
-  swiper.el.addEventListener("wheel",e=>{
-    if(!swiper.zoom) return;
-    e.preventDefault();
-    if(e.deltaY<0) swiper.zoom.in(e);
-    else swiper.zoom.out(e);
-  },{passive:false});
-}
+  lightbox.on('zoomPanUpdate', (e)=>{
+    const info=document.getElementById('pswp-info');
+    if(!info) return;
+    info.style.display = e.scale > 1 ? 'none' : 'block';
+  });
 
-function closeGallery(){
-  gallery.style.display="none";
-  if(swiper){
-    swiper.destroy(true,true);
-    swiper=null;
-  }
+  lightbox.init();
 }
 </script>
 
