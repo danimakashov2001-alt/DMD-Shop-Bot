@@ -70,6 +70,14 @@ header{
   justify-content:center;
 }
 
+.swiper-zoom-container{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
 .swiper-zoom-container img{
   max-width:100%;
   max-height:100%;
@@ -98,6 +106,12 @@ header{
   color:var(--accent);
   font-weight:600;
 }
+
+/* Стрелки */
+.swiper-button-next,
+.swiper-button-prev{
+  color:#fff;
+}
 </style>
 </head>
 <body>
@@ -110,6 +124,9 @@ header{
 
   <div class="swiper" id="swiper">
     <div class="swiper-wrapper" id="swiper-wrapper"></div>
+
+    <div class="swiper-button-prev"></div>
+    <div class="swiper-button-next"></div>
   </div>
 
   <div class="info" id="info"></div>
@@ -217,17 +234,42 @@ function openGallery(product){
   gallery.style.display="block";
 
   swiper = new Swiper("#swiper",{
-    zoom: {
-      maxRatio: 4
-    },
     slidesPerView:1,
     resistanceRatio:0,
-    doubleTap:true,
+
+    zoom:{
+      maxRatio:4,
+      minRatio:1,
+      toggle:true,
+      limitToOriginalSize:true
+    },
+
+    navigation:{
+      nextEl:".swiper-button-next",
+      prevEl:".swiper-button-prev"
+    },
+
+    mousewheel:{
+      forceToAxis:true
+    },
+
     on:{
       slideChange(){
         swiper.zoom.out();
       }
     }
+  });
+
+  /* Double tap / click */
+  let lastTap = 0;
+  document.querySelectorAll(".swiper-zoom-container").forEach(container=>{
+    container.addEventListener("click",()=>{
+      const now = Date.now();
+      if(now - lastTap < 300){
+        swiper.zoom.toggle();
+      }
+      lastTap = now;
+    });
   });
 }
 
