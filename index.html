@@ -27,7 +27,6 @@ header{
 .card img{width:100%; height:210px; object-fit:cover;}
 .card-body{padding:10px; font-size:13px;}
 .status{color:#c49a6c;}
-/* Custom overlay info */
 .pswp__custom-info{
   position:absolute; left:0; right:0; bottom:0;
   padding:14px 16px; background:linear-gradient(transparent,rgba(0,0,0,.85));
@@ -112,73 +111,63 @@ const catalog = document.getElementById("catalog");
 products.forEach((p,index)=>{
   const card = document.createElement("div");
   card.className = "card";
-
-  // создаём data атрибуты для PhotoSwipe
-  const firstSrc = p.photos[0];
-
   card.innerHTML = `
-    <img src="${firstSrc}"
-         data-pswp-src="${firstSrc}"
-         data-pswp-index="${index}">
+    <img src="${p.photos[0]}">
     <div class="card-body">
       ${p.name}<br><span class="status">${p.status}</span><br>${p.price}
     </div>
   `;
+  // Ключевой момент: по клику открываем Lightbox с массивом фото для этого товара
+  card.onclick = ()=>{
+    openGallery(p);
+  };
   catalog.appendChild(card);
 });
 
-// ====== Инициализация PhotoSwipe ======
-const lightbox = new PhotoSwipeLightbox({
-  gallery: "#catalog",
-  children: "img",
-  pswpModule: PhotoSwipe,
-  wheelToZoom: true,
-  arrowKeys: true,
-  mouseDrag: true
-});
+// ====== Функция открытия галереи ======
+function openGallery(product){
+  const items = product.photos.map(src=>({src, width:1600, height:2000}));
 
-// ====== overlay info ======
-lightbox.on('uiRegister', () => {
-  lightbox.pswp.ui.registerElement({
-    name: 'custom-info',
-    order: 9,
-    isButton: false,
-    appendTo: 'root',
-    html: `<div class="pswp__custom-info" id="pswp-info"></div>`
+  const lightbox = new PhotoSwipeLightbox({
+    dataSource: items,
+    pswpModule: PhotoSwipe,
+    wheelToZoom: true,
+    arrowKeys: true,
+    mouseDrag: true,
+    spacing:0.1,
+    bgOpacity:1
   });
-});
 
-// показываем описание при открытии фото
-lightbox.on('afterInit', (e)=>{
-  updateOverlay(e);
-});
-lightbox.on('change', (e)=>{updateOverlay(e);});
+  lightbox.on('uiRegister', ()=>{
+    lightbox.pswp.ui.registerElement({
+      name:'custom-info',
+      order:9,
+      isButton:false,
+      appendTo:'root',
+      html:`<div class="pswp__custom-info" id="pswp-info">
+        <b>${product.name}</b><br>
+        ${product.description}<br>
+        ${product.status}
+        <div class="price">${product.price}</div>
+      </div>`
+    });
+  });
 
-// скрываем overlay при зуме
-lightbox.on('zoomPanUpdate', (e)=>{
-  const info = document.getElementById("pswp-info");
-  if(info) info.classList.toggle('hidden', e.scale > 1);
-});
+  // скрытие overlay при зуме
+  lightbox.on('zoomPanUpdate', (e)=>{
+    const info = document.getElementById("pswp-info");
+    if(info) info.classList.toggle('hidden', e.scale > 1);
+  });
 
-// double tap / click zoom
-lightbox.on('doubleTap', (e)=>{
-  const pswp = lightbox.pswp;
-  const scale = pswp.currZoomLevel > 1 ? 1 : 2;
-  pswp.zoomTo(scale, {x:pswp.viewportSize.x/2, y:pswp.viewportSize.y/2});
-});
+  // double tap / click zoom
+  lightbox.on('doubleTap', (e)=>{
+    const pswp = lightbox.pswp;
+    const scale = pswp.currZoomLevel > 1 ? 1 : 2;
+    pswp.zoomTo(scale, {x:pswp.viewportSize.x/2, y:pswp.viewportSize.y/2});
+  });
 
-// функция обновления overlay
-function updateOverlay(e){
-  const info = document.getElementById("pswp-info");
-  if(!info) return;
-  const index = e.pswp.currIndex;
-  const product = products[index];
-  info.innerHTML = `<b>${product.name}</b><br>${product.description}<br>${product.status}<div class="price">${product.price}</div>`;
-  info.classList.remove('hidden');
+  lightbox.init();
 }
-
-lightbox.init();
 </script>
-
 </body>
 </html>
