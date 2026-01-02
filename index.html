@@ -5,85 +5,110 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Каталог</title>
 
+<!-- Swiper -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+
 <style>
 :root { --accent:#c49a6c; }
-* { margin:0; padding:0; box-sizing:border-box; }
+* { box-sizing:border-box; margin:0; padding:0; }
+
 html,body {
   width:100%; height:100%;
   font-family:-apple-system,BlinkMacSystemFont,Arial;
   background:#0b0b0b; color:#fff;
-  overflow:hidden;
 }
 
-/* Каталог */
 header {
-  height:46px; display:flex; align-items:center;
+  height:46px;
+  display:flex;
+  align-items:center;
   padding:0 14px;
-  background:rgba(15,15,15,.95);
+  background:#111;
 }
+
 .catalog {
-  height:calc(100vh - 46px);
-  overflow-y:auto;
   padding:14px;
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
   gap:14px;
 }
-.card {
-  background:#fff; color:#000;
-  border-radius:16px; overflow:hidden;
-}
-.card img { width:100%; height:210px; object-fit:cover; }
-.card-body { padding:10px; font-size:13px; }
 
-/* Галерея */
+.card {
+  background:#fff;
+  border-radius:16px;
+  overflow:hidden;
+  color:#000;
+}
+
+.card img {
+  width:100%;
+  height:210px;
+  object-fit:cover;
+}
+
+.card-body {
+  padding:10px;
+  font-size:13px;
+}
+
+/* ===== ГАЛЕРЕЯ ===== */
 #gallery {
   position:fixed;
   inset:0;
   background:#000;
   display:none;
-  z-index:100;
+  z-index:1000;
 }
-.viewer {
-  width:100%; height:100%;
-  overflow:hidden;
-  touch-action:pan-y;
-}
-.track {
-  display:flex;
+
+.swiper {
+  width:100%;
   height:100%;
-  transition:transform .35s ease;
 }
-.slide {
-  min-width:100%;
+
+.swiper-slide {
   display:flex;
   align-items:center;
   justify-content:center;
   overflow:hidden;
 }
-.slide img {
+
+.zoom-container {
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.zoom-container img {
   max-width:100%;
   max-height:100%;
   object-fit:contain;
   user-select:none;
   touch-action:none;
-  transform-origin:center center;
+}
+
+.close {
+  position:absolute;
+  top:12px;
+  right:14px;
+  font-size:28px;
+  z-index:10;
 }
 
 .info {
   position:absolute;
-  bottom:0; left:0; right:0;
-  padding:12px 16px;
+  bottom:0;
+  left:0;
+  right:0;
+  padding:14px 16px;
   background:linear-gradient(transparent,rgba(0,0,0,.85));
   font-size:13px;
 }
-.info .price { color:var(--accent); font-weight:600; }
 
-.close {
-  position:absolute;
-  top:10px; right:14px;
-  font-size:28px;
-  cursor:pointer;
+.info .price {
+  color:var(--accent);
+  font-weight:600;
 }
 </style>
 </head>
@@ -93,12 +118,19 @@ header {
 <div class="catalog" id="catalog"></div>
 
 <div id="gallery">
-  <div class="viewer" id="viewer">
-    <div class="track" id="track"></div>
-  </div>
   <div class="close" onclick="closeGallery()">✕</div>
+
+  <div class="swiper" id="swiper">
+    <div class="swiper-wrapper" id="swiper-wrapper"></div>
+  </div>
+
   <div class="info" id="info"></div>
 </div>
+
+<!-- Swiper -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<!-- Panzoom -->
+<script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>
 
 <script>
 const products=[
@@ -158,111 +190,93 @@ photos:[
 }
 ];
 
+
 const catalog = document.getElementById("catalog");
 const gallery = document.getElementById("gallery");
-const track = document.getElementById("track");
+const wrapper = document.getElementById("swiper-wrapper");
 const info = document.getElementById("info");
-const viewer = document.getElementById("viewer");
 
-let index = 0;
-let scale = 1;
-let x = 0, y = 0;
-let startX = 0;
-let isPanning = false;
+let swiper;
+let panzooms = [];
 
 products.forEach((p,i)=>{
   const c=document.createElement("div");
   c.className="card";
-  c.innerHTML=`<img src="${p.photos[0]}"><div class="card-body">${p.name}<br>${p.price} ₽</div>`;
-  c.onclick=()=>openGallery(i);
+  c.innerHTML=`
+    <img src="${p.photos[0]}">
+    <div class="card-body">${p.name}<br>${p.price} ₽</div>
+  `;
+  c.onclick=()=>openGallery(p);
   catalog.appendChild(c);
 });
 
-function openGallery(i){
-  index = 0;
-  track.innerHTML="";
-  products[i].photos.forEach(src=>{
-    const s=document.createElement("div");
-    s.className="slide";
-    s.innerHTML=`<img src="${src}">`;
-    track.appendChild(s);
+function openGallery(product){
+  wrapper.innerHTML="";
+  panzooms=[];
+
+  product.photos.forEach(src=>{
+    const slide=document.createElement("div");
+    slide.className="swiper-slide";
+    slide.innerHTML=`
+      <div class="zoom-container">
+        <img src="${src}">
+      </div>
+    `;
+    wrapper.appendChild(slide);
   });
+
   gallery.style.display="block";
-  updateInfo(products[i]);
-  resetTransform();
+
+  info.innerHTML=`
+    <div><b>${product.name}</b></div>
+    <div>${product.description}</div>
+    <div>${product.status}</div>
+    <div class="price">${product.price} ₽</div>
+  `;
+
+  swiper = new Swiper("#swiper",{
+    slidesPerView:1,
+    resistanceRatio:0,
+    on:{
+      slideChange(){
+        resetZoom();
+      }
+    }
+  });
+
+  document.querySelectorAll(".zoom-container").forEach(container=>{
+    const pz = Panzoom(container,{
+      maxScale:4,
+      minScale:1,
+      contain:"outside",
+      canvas:true
+    });
+    container.addEventListener("dblclick",()=>toggleZoom(pz));
+    container.addEventListener("touchend",e=>{
+      if(e.touches.length===0){
+        const now=Date.now();
+        if(container.lastTap && now-container.lastTap<300){
+          toggleZoom(pz);
+        }
+        container.lastTap=now;
+      }
+    });
+    panzooms.push(pz);
+  });
+}
+
+function toggleZoom(pz){
+  pz.zoomWithWheel({deltaY:-200});
+}
+
+function resetZoom(){
+  panzooms.forEach(pz=>pz.reset());
 }
 
 function closeGallery(){
   gallery.style.display="none";
+  if(swiper) swiper.destroy();
 }
-
-function updateInfo(p){
-  info.innerHTML=`
-    <div><b>${p.name}</b></div>
-    <div>${p.description}</div>
-    <div>${p.status}</div>
-    <div class="price">${p.price} ₽</div>
-  `;
-}
-
-function resetTransform(){
-  scale=1; x=0; y=0;
-  currentImg().style.transform="translate(0,0) scale(1)";
-  track.style.transform=`translateX(${-index*100}%)`;
-}
-
-function currentImg(){
-  return track.children[index].querySelector("img");
-}
-
-/* Swipe */
-let touchStartX=0;
-viewer.addEventListener("touchstart",e=>{
-  touchStartX=e.touches[0].clientX;
-});
-viewer.addEventListener("touchend",e=>{
-  const dx=e.changedTouches[0].clientX-touchStartX;
-  if(scale===1 && Math.abs(dx)>50){
-    index+=dx<0?1:-1;
-    index=Math.max(0,Math.min(index,track.children.length-1));
-    resetTransform();
-  }
-});
-
-/* Drag */
-viewer.addEventListener("pointerdown",e=>{
-  if(scale===1) return;
-  isPanning=true;
-  startX=e.clientX-x;
-  startY=e.clientY-y;
-});
-viewer.addEventListener("pointermove",e=>{
-  if(!isPanning) return;
-  x=e.clientX-startX;
-  y=e.clientY-startY;
-  currentImg().style.transform=`translate(${x}px,${y}px) scale(${scale})`;
-});
-viewer.addEventListener("pointerup",()=>isPanning=false);
-
-/* Wheel zoom */
-viewer.addEventListener("wheel",e=>{
-  e.preventDefault();
-  scale+=e.deltaY*-0.002;
-  scale=Math.max(1,Math.min(4,scale));
-  currentImg().style.transform=`translate(${x}px,${y}px) scale(${scale})`;
-},{passive:false});
-
-/* Double tap / click */
-let lastTap=0;
-viewer.addEventListener("click",()=>{
-  const now=Date.now();
-  if(now-lastTap<300){
-    scale=scale===1?2.5:1;
-    x=y=0;
-    currentImg().style.transform=`translate(0,0) scale(${scale})`;
-  }
-  lastTap=now;
-});
 </script>
 
 </body>
