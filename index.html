@@ -88,7 +88,6 @@
     -webkit-box-orient:vertical;
     overflow:hidden;
   }
-
   /* ✅ description в ленте */
   .short-desc{
     margin-top:6px;
@@ -176,9 +175,6 @@
   }
   .pswp__guru-caption .instock{ color:#38d66b; }
   .pswp__guru-caption .inway{ color:#ffd54a; }
-
-  /* ✅ делаем фото визуально “крупнее”: меньше системных отступов */
-  .pswp__scroll-wrap { padding:0 !important; }
 </style>
 </head>
 
@@ -447,16 +443,20 @@ function fillGuruCaption(product) {
   m.innerHTML = `${statusHtml}${priceHtml ? " • " + priceHtml : ""}`;
 }
 
-/* ✅ скрывать при ЛЮБОМ увеличении, показывать при возврате к 1x */
+/* ✅ Скрывать при ЛЮБОМ изменении масштаба относительно базового */
 function syncGuruCaptionVisibility(pswp) {
   const cap = document.getElementById('guruCaption');
   if (!cap) return;
 
-  const z = pswp.currZoomLevel || 1;
+  const slide = pswp.currSlide;
+  if (!slide || !slide.zoomLevels) return;
 
-  // Любое увеличение => скрываем
-  // Возврат к исходному (примерно 1.0) => показываем
-  const isBase = Math.abs(z - 1) < 0.001;
+  const base = slide.zoomLevels.initial;       // реальный “исходный” масштаб
+  const curr = slide.currZoomLevel || base;    // текущий масштаб
+
+  const eps = 0.01; // допуск на плавающие числа
+  const isBase = Math.abs(curr - base) < eps;
+
   cap.classList.toggle('is-hidden-by-zoom', !isBase);
 }
 
@@ -467,8 +467,13 @@ const lightbox = new PhotoSwipeLightbox({
   arrowKeys: true,
   pswpOptions: {
     closeOnScroll: false,
-    bgOpacity: 1,      // визуально “крупнее” фото
-    padding: { top: 0, bottom: 0, left: 0, right: 0 } // больше площади под фото
+
+    /* ✅ делаем фото больше */
+    initialZoomLevel: 'fill',    // фото занимает больше экрана
+    secondaryZoomLevel: 2,
+    maxZoomLevel: 4,
+    bgOpacity: 1,
+    padding: { top: 0, bottom: 0, left: 0, right: 0 }
   }
 });
 
@@ -477,13 +482,28 @@ lightbox.on('afterInit', () => {
 
   ensureGuruCaption(pswp);
   fillGuruCaption(currentProduct);
+
+  // после init зум уже посчитан — сразу синхронизируем
   syncGuruCaptionVisibility(pswp);
 
+  // ✅ при зуме/пане скрываем/показываем
   pswp.on('zoomPanUpdate', () => syncGuruCaptionVisibility(pswp));
 
+  // ✅ при смене слайда (если несколько фото) тоже пересчитываем базовый зум
+  pswp.on('change', () => {
+    syncGuruCaptionVisibility(pswp);
+  });
+
+  // double tap: в базу -> 2х, иначе -> в базу (не в 1!)
   pswp.on('doubleTap', () => {
-    const scale = (Math.abs((pswp.currZoomLevel || 1) - 1) < 0.001) ? 2 : 1;
-    pswp.zoomTo(scale, { x: pswp.viewportSize.x/2, y: pswp.viewportSize.y/2 });
+    const slide = pswp.currSlide;
+    if (!slide || !slide.zoomLevels) return;
+
+    const base = slide.zoomLevels.initial;
+    const curr = slide.currZoomLevel || base;
+    const target = (Math.abs(curr - base) < 0.01) ? 2 : base;
+
+    pswp.zoomTo(target, { x: pswp.viewportSize.x/2, y: pswp.viewportSize.y/2 });
   });
 
   pswp.on('destroy', () => {
