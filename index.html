@@ -2,15 +2,16 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Каталог товаров</title>
 
 <link rel="stylesheet" href="https://unpkg.com/photoswipe@5/dist/photoswipe.css">
 
 <style>
 body, html {
-  margin:0; padding:0; height:100%; width:100%;
-  font-family:-apple-system,BlinkMacSystemFont,Arial; background:#0b0b0b; color:#fff;
+  margin:0; padding:0; width:100%; height:100%;
+  font-family:-apple-system,BlinkMacSystemFont,Arial;
+  background:#0b0b0b; color:#fff;
 }
 header{
   height:46px; display:flex; align-items:center; padding:0 14px; background:#111; font-weight:600;
@@ -26,15 +27,21 @@ header{
 .card img{width:100%; height:210px; object-fit:cover;}
 .card-body{padding:10px; font-size:13px;}
 .status{color:#c49a6c;}
-/* overlay info */
+/* Custom overlay info */
 .pswp__custom-info{
-  position:absolute; left:0;right:0;bottom:0;
-  padding:14px 16px;
-  background:linear-gradient(transparent,rgba(0,0,0,.85));
+  position:absolute; left:0; right:0; bottom:0;
+  padding:14px 16px; background:linear-gradient(transparent,rgba(0,0,0,.85));
   font-size:13px;
+  transition:opacity .2s;
 }
-.pswp__custom-info .price{
-  margin-top:6px; font-weight:600;
+.pswp__custom-info.hidden{opacity:0;}
+.pswp__custom-info .price{margin-top:6px; font-weight:600;}
+/* Custom arrows */
+.pswp__button--arrow{
+  color:#fff; font-size:36px;
+}
+.pswp__indicator{
+  bottom:70px; color:#fff;
 }
 </style>
 </head>
@@ -49,6 +56,7 @@ header{
 <script src="https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.umd.min.js"></script>
 
 <script>
+// ====== Данные товаров ======
 const products=[
 {
 name:"Зип худи Zara Type crop fit (серый)",
@@ -106,21 +114,22 @@ photos:[
 }
 ];
 
+// ====== Каталог ======
 const catalog = document.getElementById("catalog");
-
 products.forEach((p,i)=>{
-  const card=document.createElement("div");
-  card.className="card";
-  card.innerHTML=`
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
     <img src="${p.photos[0]}">
     <div class="card-body">
       ${p.name}<br><span class="status">${p.status}</span><br>${p.price}
     </div>
   `;
-  card.onclick=()=>openGallery(i);
+  card.onclick = ()=>openGallery(i);
   catalog.appendChild(card);
 });
 
+// ====== Галерея ======
 let lightbox;
 
 function openGallery(index){
@@ -133,9 +142,13 @@ function openGallery(index){
     pswpModule: PhotoSwipe,
     wheelToZoom: true,
     arrowKeys: true,
+    mouseDrag: true,
+    spacing: 0.1,
+    bgOpacity: 1
   });
 
-  lightbox.on('uiRegister', function() {
+  // overlay info
+  lightbox.on('uiRegister', () => {
     lightbox.pswp.ui.registerElement({
       name: 'custom-info',
       order: 9,
@@ -150,10 +163,19 @@ function openGallery(index){
     });
   });
 
-  // скрываем info при зуме
-  lightbox.on('zoomPanUpdate', function(e){
-    const info=document.getElementById("pswp-info");
-    if(info) info.style.display = e.scale > 1 ? "none" : "block";
+  // скрытие overlay при зуме
+  lightbox.on('zoomPanUpdate', (e)=>{
+    const info = document.getElementById("pswp-info");
+    if(info) info.classList.toggle('hidden', e.scale > 1);
+  });
+
+  // double tap / click zoom
+  lightbox.on('doubleTap', (e)=>{
+    const img = e.target;
+    if(!img) return;
+    const pswp = lightbox.pswp;
+    const scale = pswp.currZoomLevel > 1 ? 1 : 2;
+    pswp.zoomTo(scale, {x:pswp.viewportSize.x/2, y:pswp.viewportSize.y/2});
   });
 
   lightbox.init();
