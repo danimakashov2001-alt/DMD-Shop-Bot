@@ -12,13 +12,10 @@
     margin:0; padding:0; width:100%; height:100%;
     font-family:-apple-system,BlinkMacSystemFont,Arial;
     color:#fff;
-
-    /* ФОН-КАРТИНКА */
     background: url("https://iili.io/fXfx3ep.jpg") center / cover no-repeat;
     background-color:#0b0b0b;
   }
 
-  /* лёгкое затемнение фона, чтобы контент читался */
   body::before{
     content:"";
     position:fixed;
@@ -40,18 +37,8 @@
     font-weight:600;
     gap:12px;
   }
-
-  .header-left{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    min-width:0;
-  }
-  .header-title{
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
+  .header-left{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .header-title{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .btn{
     appearance:none;
     border:1px solid rgba(255,255,255,0.12);
@@ -64,10 +51,7 @@
   }
   .btn:active{ transform:scale(0.98); }
 
-  .page{
-    height:calc(100vh - 46px);
-    overflow-y:auto;
-  }
+  .page{ height:calc(100vh - 46px); overflow-y:auto; }
 
   /* Товары */
   .catalog{
@@ -76,30 +60,19 @@
     grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
     gap:14px;
   }
-
   .card{
     border-radius:16px;
     overflow:hidden;
     cursor:pointer;
     transition:transform .2s;
     position:relative;
-
-    /* стеклянный эффект */
     background:rgba(255,255,255,0.06);
     border:1px solid rgba(255,255,255,0.10);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
   }
   .card:hover{transform:scale(1.03);}
-
-  .card img{
-    width:100%;
-    height:210px;
-    object-fit:cover;
-    display:block;
-  }
-
-  /* Блок описания СДЕЛАН ТЕМНЕЕ */
+  .card img{ width:100%; height:210px; object-fit:cover; display:block; }
   .card-body{
     position:absolute;
     left:0; right:0; bottom:0;
@@ -108,7 +81,6 @@
     line-height:1.25;
     background:linear-gradient(transparent, rgba(0,0,0,0.85));
   }
-
   .name{
     font-weight:700;
     display:-webkit-box;
@@ -116,28 +88,13 @@
     -webkit-box-orient:vertical;
     overflow:hidden;
   }
-
-  .status{
-    display:inline-block;
-    margin-top:6px;
-    font-weight:700;
-  }
-
-  .status.instock{ color:#38d66b; }  /* зелёный */
-  .status.inway{ color:#ffd54a; }    /* жёлтый */
-  .price{
-    margin-top:6px;
-    font-weight:700;
-    opacity:0.95;
-  }
+  .status{ display:inline-block; margin-top:6px; font-weight:800; }
+  .status.instock{ color:#38d66b; }
+  .status.inway{ color:#ffd54a; }
+  .price{ margin-top:6px; font-weight:800; opacity:0.95; }
 
   /* Категории */
-  .categories{
-    padding:14px;
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-  }
+  .categories{ padding:14px; display:flex; flex-direction:column; gap:12px; }
   .cat-card{
     background:rgba(17,17,17,0.85);
     border:1px solid rgba(255,255,255,0.10);
@@ -146,15 +103,8 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
-  .cat-title{
-    font-weight:800;
-    margin-bottom:10px;
-  }
-  .subcats{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-  }
+  .cat-title{ font-weight:800; margin-bottom:10px; }
+  .subcats{ display:flex; flex-wrap:wrap; gap:10px; }
   .chip{
     padding:8px 12px;
     border-radius:999px;
@@ -165,33 +115,30 @@
     font-size:13px;
   }
   .chip:active{ transform:scale(0.98); }
+  .hint{ padding:0 14px 14px; color:rgba(255,255,255,0.78); font-size:12px; }
 
-  .hint{
-    padding:0 14px 14px;
-    color:rgba(255,255,255,0.78);
-    font-size:12px;
-  }
-
-  /* Empty */
   .hidden{ display:none !important; }
-  .empty{
-    padding:14px;
-    color:rgba(255,255,255,0.85);
-    font-size:13px;
-  }
+  .empty{ padding:14px; color:rgba(255,255,255,0.85); font-size:13px; }
 
-  /* PhotoSwipe Overlay info */
+  /* PhotoSwipe overlay (описание) */
   .pswp__custom-info{
     position:absolute;
     left:0; right:0; bottom:0;
-    padding:14px 16px;
+    z-index: 99999; /* чтобы всегда поверх */
+    box-sizing:border-box;
 
-    background:linear-gradient(transparent, rgba(0,0,0,.90));
+    padding:14px 16px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom)); /* iOS/WebView */
+
+    background:linear-gradient(transparent, rgba(0,0,0,0.92));
+    color:#fff;
     font-size:13px;
-    transition:opacity .2s;
+    transition:opacity .18s ease;
     pointer-events:none;
+
+    text-shadow: 0 1px 2px rgba(0,0,0,0.65);
   }
-  .pswp__custom-info.hidden{opacity:0;}
+  .pswp__custom-info.hidden{ opacity:0; }
 
   .pswp__custom-info b{
     font-size:15px;
@@ -199,22 +146,22 @@
     margin-bottom:6px;
   }
 
-  /* Полное описание — сохраняем переносы строк */
   .pswp__desc{
-    white-space:pre-line;
+    white-space:pre-line;  /* полное описание с переносами */
     line-height:1.35;
     opacity:0.95;
   }
 
   .pswp__meta{
     margin-top:8px;
-    font-weight:700;
-  }
-  .pswp__meta .status-badge{
     font-weight:800;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
   }
-  .pswp__meta .instock{ color:#38d66b; }
-  .pswp__meta .inway{ color:#ffd54a; }
+  .pswp__meta .status-badge.instock{ color:#38d66b; }
+  .pswp__meta .status-badge.inway{ color:#ffd54a; }
 </style>
 </head>
 
@@ -226,13 +173,11 @@
   <button class="btn" id="toggleBtn">Категории</button>
 </header>
 
-<!-- Экран товаров -->
 <div class="page" id="productsPage">
   <div class="catalog" id="catalog"></div>
   <div class="empty hidden" id="emptyState">Пока нет товаров в этой подкатегории.</div>
 </div>
 
-<!-- Экран категорий -->
 <div class="page hidden" id="categoriesPage">
   <div class="categories" id="categories"></div>
   <div class="hint">Нажми на подкатегорию — покажу товары.</div>
@@ -247,7 +192,7 @@ const products = [
     name:"Зип худи Zara Type crop fit (серый)",
     price:4300,
     status:"В наличии",
-    description:"Параметры модели: 185/70, размер L.",
+    description:"Параметры модели: 185/70, размер L.\nСостав: хлопок.\nПосадка: crop fit.",
     subcategory:"zip_hoodies",
     photos:[
       "https://iili.io/fVQvE5F.jpg",
@@ -260,7 +205,7 @@ const products = [
     name:"Зип худи Zara Type crop fit (чёрный)",
     price:4300,
     status:"В наличии",
-    description:"Минимализм. Плотный хлопок.",
+    description:"Минимализм. Плотный хлопок.\nCrop fit.\nОтлично держит форму.",
     subcategory:"zip_hoodies",
     photos:[
       "https://iili.io/fVQ6E4j.webp",
@@ -273,8 +218,8 @@ const products = [
   {
     name:"Зип худи No Faith Studio boxy crop fit",
     price:4100,
-    status:"В наличии",
-    description:"Y2K / Opium стиль.\nОверсайз посадка.\nПлотная ткань.",
+    status:"В пути",
+    description:"Y2K / Opium стиль.\nОверсайз посадка.\nПлотная ткань.\nОжидаем поступление.",
     subcategory:"zip_hoodies",
     photos:[
       "https://iili.io/fXB5Ctj.jpg",
@@ -286,7 +231,7 @@ const products = [
     name:"Лонгслив Derschutze crop fit",
     price:3890,
     status:"В наличии",
-    description:"Эксклюзивная вышивка.\nМягкий хлопок.\nИдеально под слой.",
+    description:"Эксклюзивная вышивка.\nМягкий хлопок.\nИдеально под слой.\nCrop fit.",
     subcategory:"longsleeves",
     photos:[
       "https://iili.io/fVQgdrl.webp",
@@ -299,7 +244,7 @@ const products = [
   }
 ];
 
-// ====== Категории/подкатегории ======
+// ====== Категории ======
 const categoryTree = [
   { title: "Головные уборы", subs: ["Шапки", "Кепки"] },
   { title: "Верх", subs: ["Зип Худи", "Лонгсливы", "Футболки"] },
@@ -307,22 +252,11 @@ const categoryTree = [
   { title: "Обувь", subs: ["Кроссовки", "Туфли"] }
 ];
 
-// ====== Маппинг subcategory ======
 const subcategoryMap = {
   "Зип Худи": "zip_hoodies",
   "Лонгсливы": "longsleeves",
-  // добавишь позже:
-  // "Футболки": "tshirts",
-  // "Джинсы": "jeans",
-  // "Брюки": "pants",
-  // "Шорты": "shorts",
-  // "Шапки": "beanies",
-  // "Кепки": "caps",
-  // "Кроссовки": "sneakers",
-  // "Туфли": "shoes"
 };
 
-// ====== helpers ======
 function statusClass(status){
   const s = (status || "").toLowerCase();
   if (s.includes("в наличии")) return "instock";
@@ -341,7 +275,7 @@ const catalog = document.getElementById("catalog");
 const categoriesEl = document.getElementById("categories");
 const emptyState = document.getElementById("emptyState");
 
-let currentFilter = null; // null = все товары
+let currentFilter = null;
 
 // ====== Рендер товаров ======
 function renderProducts() {
@@ -362,7 +296,6 @@ function renderProducts() {
 
     const card = document.createElement("div");
     card.className = "card";
-    card.dataset.subcategory = product.subcategory;
     card.innerHTML = `
       <img src="${product.photos[0]}" alt="">
       <div class="card-body">
@@ -440,6 +373,7 @@ const lightbox = new PhotoSwipeLightbox({
   arrowKeys: true
 });
 
+// регистрируем UI
 lightbox.on('uiRegister', () => {
   lightbox.pswp.ui.registerElement({
     name: 'custom-info',
@@ -460,11 +394,10 @@ function updateOverlay(product) {
   const nameEl = document.getElementById('pswp-name');
   const descEl = document.getElementById('pswp-desc');
   const metaEl = document.getElementById('pswp-meta');
-  if (!nameEl) return;
+  const infoEl = document.getElementById('pswp-info');
+  if (!nameEl || !descEl || !metaEl || !infoEl) return;
 
   nameEl.textContent = product?.name ?? '';
-
-  // Полное описание (с переносами строк)
   descEl.textContent = product?.description ?? '';
 
   const stCls = statusClass(product?.status);
@@ -472,9 +405,23 @@ function updateOverlay(product) {
     ? `<span class="status-badge ${stCls}">${product.status}</span>`
     : '';
 
-  const priceHtml = product?.price != null ? ` • ${product.price}` : '';
+  const priceHtml = product?.price != null ? `<span>${product.price}</span>` : '';
 
-  metaEl.innerHTML = `${statusHtml}${priceHtml}`;
+  metaEl.innerHTML = `${statusHtml}${priceHtml ? " • " + priceHtml : ""}`;
+
+  // гарантируем, что при открытии оно видно
+  infoEl.classList.remove('hidden');
+}
+
+function syncOverlayVisibility(pswp) {
+  const info = document.getElementById("pswp-info");
+  if (!info) return;
+
+  // ВАЖНО: берём реальный zoom из pswp, а не из event
+  const z = pswp.currZoomLevel || 1;
+
+  // небольшой порог, чтобы не мигало на 1.0001
+  info.classList.toggle('hidden', z > 1.02);
 }
 
 lightbox.on('open', () => {
@@ -482,11 +429,13 @@ lightbox.on('open', () => {
 
   updateOverlay(currentProduct);
 
-  pswp.on('zoomPanUpdate', (e) => {
-    const info = document.getElementById("pswp-info");
-    if (info) info.classList.toggle('hidden', e.scale > 1);
-  });
+  // сразу выставляем корректную видимость
+  syncOverlayVisibility(pswp);
 
+  // обновляем при любом зуме/панорамировании
+  pswp.on('zoomPanUpdate', () => syncOverlayVisibility(pswp));
+
+  // double tap zoom
   pswp.on('doubleTap', () => {
     const scale = pswp.currZoomLevel > 1 ? 1 : 2;
     pswp.zoomTo(scale, { x: pswp.viewportSize.x/2, y: pswp.viewportSize.y/2 });
@@ -521,4 +470,3 @@ renderCategories();
 
 </body>
 </html>
-
