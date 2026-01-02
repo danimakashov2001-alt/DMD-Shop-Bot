@@ -139,7 +139,6 @@
     pointer-events:none;
     text-shadow: 0 1px 2px rgba(0,0,0,0.65);
   }
-  /* Важно: НЕ display:none */
   .pswp__custom-caption.pswp-caption--hidden{ opacity:0; }
 
   .pswp__custom-caption .title{
@@ -190,7 +189,15 @@ const products = [
     name:"Зип худи Zara Type crop fit (серый)",
     price:4300,
     status:"В наличии",
-    description:"Параметры модели: 185/70, размер L.\nСостав: хлопок.\nПосадка: crop fit.",
+    description:"Параметры модели: 185/70, размер L.",
+    fullDescription:
+`Зип худи Zara Type crop fit (серый)
+
+• Посадка: crop fit
+• Материал: плотный хлопок
+• Параметры модели: 185/70, размер L
+• Уход: деликатная стирка 30°
+• Особенности: молния по всей длине, мягкая внутренняя сторона`,
     subcategory:"zip_hoodies",
     photos:[
       "https://iili.io/fVQvE5F.jpg",
@@ -203,7 +210,15 @@ const products = [
     name:"Зип худи Zara Type crop fit (чёрный)",
     price:4300,
     status:"В наличии",
-    description:"Минимализм. Плотный хлопок.\nCrop fit.\nОтлично держит форму.",
+    description:"Минимализм. Плотный хлопок.",
+    fullDescription:
+`Зип худи Zara Type crop fit (чёрный)
+
+• Стиль: минимализм
+• Материал: плотный хлопок
+• Посадка: crop fit
+• Уход: деликатная стирка 30°
+• Особенности: держит форму, универсальный цвет`,
     subcategory:"zip_hoodies",
     photos:[
       "https://iili.io/fVQ6E4j.webp",
@@ -217,7 +232,14 @@ const products = [
     name:"Зип худи No Faith Studio boxy crop fit",
     price:4100,
     status:"В наличии",
-    description:"Y2K / Opium стиль.\nОверсайз посадка.\nПлотная ткань.\nОжидаем поступление.",
+    description:"Y2K / Opium стиль.",
+    fullDescription:
+`Зип худи No Faith Studio boxy crop fit
+
+• Стиль: Y2K / Opium
+• Посадка: boxy + crop
+• Материал: плотная ткань
+• Особенности: широкий силуэт, акцентный крой`,
     subcategory:"zip_hoodies",
     photos:[
       "https://iili.io/fXB5Ctj.jpg",
@@ -229,7 +251,15 @@ const products = [
     name:"Лонгслив Derschutze crop fit",
     price:3890,
     status:"В наличии",
-    description:"Эксклюзивная вышивка.\nМягкий хлопок.\nИдеально под слой.\nCrop fit.",
+    description:"Эксклюзивная вышивка.",
+    fullDescription:
+`Лонгслив Derschutze crop fit
+
+• Детали: эксклюзивная вышивка
+• Материал: мягкий хлопок
+• Посадка: crop fit
+• Уход: деликатная стирка 30°
+• Особенности: идеален под слой, комфортная посадка`,
     subcategory:"longsleeves",
     photos:[
       "https://iili.io/fVQgdrl.webp",
@@ -363,17 +393,9 @@ const lightbox = new PhotoSwipeLightbox({
   pswpModule: () => import('https://unpkg.com/photoswipe@5/dist/photoswipe.esm.min.js'),
   wheelToZoom: true,
   arrowKeys: true,
-
-  // опции PhotoSwipe — сюда
-  pswpOptions: {
-    closeOnScroll: false
-  }
+  pswpOptions: { closeOnScroll: false }
 });
 
-/**
- * ✅ FIX: uiRegister вызывается без аргументов.
- * Берём pswp из lightbox.pswp.
- */
 lightbox.on('uiRegister', () => {
   const pswp = lightbox.pswp;
   if (!pswp || !pswp.ui) return;
@@ -394,14 +416,18 @@ lightbox.on('uiRegister', () => {
 });
 
 function fillCaption(product) {
-  const cap = document.getElementById('pswpCaption');
   const t = document.getElementById('pswpTitle');
   const d = document.getElementById('pswpDesc');
   const m = document.getElementById('pswpMeta');
-  if (!cap || !t || !d || !m) return;
+  if (!t || !d || !m) return;
 
   t.textContent = product?.name ?? '';
-  d.textContent = product?.description ?? '';
+
+  // ✅ показываем ПОЛНОЕ описание
+  const fullText = (product?.fullDescription && String(product.fullDescription).trim())
+    ? product.fullDescription
+    : (product?.description ?? "");
+  d.textContent = fullText;
 
   const stCls = statusClass(product?.status);
   const statusHtml = product?.status ? `<span class="${stCls}">${product.status}</span>` : '';
