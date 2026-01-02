@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Каталог товаров</title>
 
 <link rel="stylesheet" href="https://unpkg.com/photoswipe@5/dist/photoswipe.css">
@@ -31,18 +31,10 @@ header{
 .pswp__custom-info{
   position:absolute; left:0; right:0; bottom:0;
   padding:14px 16px; background:linear-gradient(transparent,rgba(0,0,0,.85));
-  font-size:13px;
-  transition:opacity .2s;
+  font-size:13px; transition:opacity .2s;
 }
 .pswp__custom-info.hidden{opacity:0;}
 .pswp__custom-info .price{margin-top:6px; font-weight:600;}
-/* Custom arrows */
-.pswp__button--arrow{
-  color:#fff; font-size:36px;
-}
-.pswp__indicator{
-  bottom:70px; color:#fff;
-}
 </style>
 </head>
 <body>
@@ -116,70 +108,76 @@ photos:[
 
 // ====== Каталог ======
 const catalog = document.getElementById("catalog");
-products.forEach((p,i)=>{
+
+products.forEach((p,index)=>{
   const card = document.createElement("div");
   card.className = "card";
+
+  // создаём data атрибуты для PhotoSwipe
+  const firstSrc = p.photos[0];
+
   card.innerHTML = `
-    <img src="${p.photos[0]}">
+    <img src="${firstSrc}"
+         data-pswp-src="${firstSrc}"
+         data-pswp-index="${index}">
     <div class="card-body">
       ${p.name}<br><span class="status">${p.status}</span><br>${p.price}
     </div>
   `;
-  card.onclick = ()=>openGallery(i);
   catalog.appendChild(card);
 });
 
-// ====== Галерея ======
-let lightbox;
+// ====== Инициализация PhotoSwipe ======
+const lightbox = new PhotoSwipeLightbox({
+  gallery: "#catalog",
+  children: "img",
+  pswpModule: PhotoSwipe,
+  wheelToZoom: true,
+  arrowKeys: true,
+  mouseDrag: true
+});
 
-function openGallery(index){
-  if(lightbox) lightbox.destroy();
-
-  const items = products[index].photos.map(src=>({src, width:1600, height:2000}));
-
-  lightbox = new PhotoSwipeLightbox({
-    dataSource: items,
-    pswpModule: PhotoSwipe,
-    wheelToZoom: true,
-    arrowKeys: true,
-    mouseDrag: true,
-    spacing: 0.1,
-    bgOpacity: 1
+// ====== overlay info ======
+lightbox.on('uiRegister', () => {
+  lightbox.pswp.ui.registerElement({
+    name: 'custom-info',
+    order: 9,
+    isButton: false,
+    appendTo: 'root',
+    html: `<div class="pswp__custom-info" id="pswp-info"></div>`
   });
+});
 
-  // overlay info
-  lightbox.on('uiRegister', () => {
-    lightbox.pswp.ui.registerElement({
-      name: 'custom-info',
-      order: 9,
-      isButton: false,
-      appendTo: 'root',
-      html: `<div class="pswp__custom-info" id="pswp-info">
-        <b>${products[index].name}</b><br>
-        ${products[index].description}<br>
-        ${products[index].status}
-        <div class="price">${products[index].price}</div>
-      </div>`
-    });
-  });
+// показываем описание при открытии фото
+lightbox.on('afterInit', (e)=>{
+  updateOverlay(e);
+});
+lightbox.on('change', (e)=>{updateOverlay(e);});
 
-  // скрытие overlay при зуме
-  lightbox.on('zoomPanUpdate', (e)=>{
-    const info = document.getElementById("pswp-info");
-    if(info) info.classList.toggle('hidden', e.scale > 1);
-  });
+// скрываем overlay при зуме
+lightbox.on('zoomPanUpdate', (e)=>{
+  const info = document.getElementById("pswp-info");
+  if(info) info.classList.toggle('hidden', e.scale > 1);
+});
 
-  // double tap / click zoom
-  lightbox.on('doubleTap', (e)=>{
-    const img = e.target;
-    if(!img) return;
-    const pswp = lightbox.pswp;
-    const scale = pswp.currZoomLevel > 1 ? 1 : 2;
-    pswp.zoomTo(scale, {x:pswp.viewportSize.x/2, y:pswp.viewportSize.y/2});
-  });
+// double tap / click zoom
+lightbox.on('doubleTap', (e)=>{
+  const pswp = lightbox.pswp;
+  const scale = pswp.currZoomLevel > 1 ? 1 : 2;
+  pswp.zoomTo(scale, {x:pswp.viewportSize.x/2, y:pswp.viewportSize.y/2});
+});
 
-  lightbox.init();
+// функция обновления overlay
+function updateOverlay(e){
+  const info = document.getElementById("pswp-info");
+  if(!info) return;
+  const index = e.pswp.currIndex;
+  const product = products[index];
+  info.innerHTML = `<b>${product.name}</b><br>${product.description}<br>${product.status}<div class="price">${product.price}</div>`;
+  info.classList.remove('hidden');
 }
+
+lightbox.init();
 </script>
 
 </body>
