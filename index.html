@@ -83,6 +83,7 @@ header{
   max-height:100%;
   object-fit:contain;
   user-select:none;
+  touch-action:none;
 }
 
 .close{
@@ -124,7 +125,6 @@ header{
 
   <div class="swiper" id="swiper">
     <div class="swiper-wrapper" id="swiper-wrapper"></div>
-
     <div class="swiper-button-prev"></div>
     <div class="swiper-button-next"></div>
   </div>
@@ -236,12 +236,15 @@ function openGallery(product){
   swiper = new Swiper("#swiper",{
     slidesPerView:1,
     resistanceRatio:0,
+    touchStartPreventDefault:false,
 
     zoom:{
+      enabled:true,
       maxRatio:4,
       minRatio:1,
-      toggle:true,
-      limitToOriginalSize:true
+      toggle:false,
+      limitToOriginalSize:true,
+      zoomedSlideClass:'swiper-slide-zoomed'
     },
 
     navigation:{
@@ -249,28 +252,25 @@ function openGallery(product){
       prevEl:".swiper-button-prev"
     },
 
-    mousewheel:{
-      forceToAxis:true
-    },
-
     on:{
+      doubleTap(){
+        swiper.zoom.toggle();
+      },
       slideChange(){
         swiper.zoom.out();
       }
     }
   });
 
-  /* Double tap / click */
-  let lastTap = 0;
-  document.querySelectorAll(".swiper-zoom-container").forEach(container=>{
-    container.addEventListener("click",()=>{
-      const now = Date.now();
-      if(now - lastTap < 300){
-        swiper.zoom.toggle();
-      }
-      lastTap = now;
-    });
-  });
+  swiper.zoom.enable();
+
+  /* Wheel zoom */
+  swiper.el.addEventListener("wheel",e=>{
+    if(!swiper.zoom) return;
+    e.preventDefault();
+    if(e.deltaY<0) swiper.zoom.in(e);
+    else swiper.zoom.out(e);
+  },{passive:false});
 }
 
 function closeGallery(){
