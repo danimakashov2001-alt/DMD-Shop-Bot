@@ -15,7 +15,6 @@
     background: url("https://iili.io/fXfx3ep.jpg") center / cover no-repeat;
     background-color:#0b0b0b;
   }
-
   body::before{
     content:"";
     position:fixed;
@@ -37,8 +36,8 @@
     font-weight:600;
     gap:12px;
   }
-  .header-left{ display:flex; align-items:center; gap:10px; min-width:0; }
   .header-title{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
   .btn{
     appearance:none;
     border:1px solid rgba(255,255,255,0.12);
@@ -53,7 +52,7 @@
 
   .page{ height:calc(100vh - 46px); overflow-y:auto; }
 
-  /* Товары */
+  /* товары */
   .catalog{
     padding:14px;
     display:grid;
@@ -73,6 +72,7 @@
   }
   .card:hover{transform:scale(1.03);}
   .card img{ width:100%; height:210px; object-fit:cover; display:block; }
+
   .card-body{
     position:absolute;
     left:0; right:0; bottom:0;
@@ -93,7 +93,7 @@
   .status.inway{ color:#ffd54a; }
   .price{ margin-top:6px; font-weight:800; opacity:0.95; }
 
-  /* Категории */
+  /* категории */
   .categories{ padding:14px; display:flex; flex-direction:column; gap:12px; }
   .cat-card{
     background:rgba(17,17,17,0.85);
@@ -120,15 +120,15 @@
   .hidden{ display:none !important; }
   .empty{ padding:14px; color:rgba(255,255,255,0.85); font-size:13px; }
 
-  /* PhotoSwipe overlay (описание) */
+  /* ===== PhotoSwipe описание снизу ===== */
   .pswp__custom-info{
     position:absolute;
     left:0; right:0; bottom:0;
-    z-index: 99999; /* чтобы всегда поверх */
+    z-index: 99999;
     box-sizing:border-box;
 
     padding:14px 16px;
-    padding-bottom: calc(14px + env(safe-area-inset-bottom)); /* iOS/WebView */
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
 
     background:linear-gradient(transparent, rgba(0,0,0,0.92));
     color:#fff;
@@ -145,13 +145,11 @@
     display:block;
     margin-bottom:6px;
   }
-
   .pswp__desc{
-    white-space:pre-line;  /* полное описание с переносами */
+    white-space:pre-line;
     line-height:1.35;
     opacity:0.95;
   }
-
   .pswp__meta{
     margin-top:8px;
     font-weight:800;
@@ -160,16 +158,14 @@
     align-items:center;
     flex-wrap:wrap;
   }
-  .pswp__meta .status-badge.instock{ color:#38d66b; }
-  .pswp__meta .status-badge.inway{ color:#ffd54a; }
+  .pswp__meta .instock{ color:#38d66b; }
+  .pswp__meta .inway{ color:#ffd54a; }
 </style>
 </head>
 
 <body>
 <header>
-  <div class="header-left">
-    <div class="header-title" id="headerTitle">🛍 Каталог</div>
-  </div>
+  <div class="header-title" id="headerTitle">🛍 Каталог</div>
   <button class="btn" id="toggleBtn">Категории</button>
 </header>
 
@@ -218,7 +214,7 @@ const products = [
   {
     name:"Зип худи No Faith Studio boxy crop fit",
     price:4100,
-    status:"В наличии",
+    status:"В пути",
     description:"Y2K / Opium стиль.\nОверсайз посадка.\nПлотная ткань.\nОжидаем поступление.",
     subcategory:"zip_hoodies",
     photos:[
@@ -267,10 +263,8 @@ function statusClass(status){
 // ====== DOM ======
 const headerTitle = document.getElementById("headerTitle");
 const toggleBtn = document.getElementById("toggleBtn");
-
 const productsPage = document.getElementById("productsPage");
 const categoriesPage = document.getElementById("categoriesPage");
-
 const catalog = document.getElementById("catalog");
 const categoriesEl = document.getElementById("categories");
 const emptyState = document.getElementById("emptyState");
@@ -373,9 +367,13 @@ const lightbox = new PhotoSwipeLightbox({
   arrowKeys: true
 });
 
-// регистрируем UI
-lightbox.on('uiRegister', () => {
-  lightbox.pswp.ui.registerElement({
+/**
+ * ✅ КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ:
+ * регистрируем UI через событие uiRegister: e.pswp.ui.registerElement(...)
+ * (так работает стабильно в браузере + Telegram WebView)
+ */
+lightbox.on('uiRegister', (e) => {
+  e.pswp.ui.registerElement({
     name: 'custom-info',
     order: 9,
     isButton: false,
@@ -395,47 +393,46 @@ function updateOverlay(product) {
   const descEl = document.getElementById('pswp-desc');
   const metaEl = document.getElementById('pswp-meta');
   const infoEl = document.getElementById('pswp-info');
-  if (!nameEl || !descEl || !metaEl || !infoEl) return;
+
+  // если вдруг ещё не вставилось — просто выходим (в open мы вызовем снова)
+  if (!nameEl || !descEl || !metaEl || !infoEl) return false;
 
   nameEl.textContent = product?.name ?? '';
   descEl.textContent = product?.description ?? '';
 
   const stCls = statusClass(product?.status);
   const statusHtml = product?.status
-    ? `<span class="status-badge ${stCls}">${product.status}</span>`
+    ? `<span class="${stCls}">${product.status}</span>`
     : '';
 
   const priceHtml = product?.price != null ? `<span>${product.price}</span>` : '';
 
   metaEl.innerHTML = `${statusHtml}${priceHtml ? " • " + priceHtml : ""}`;
 
-  // гарантируем, что при открытии оно видно
+  // по умолчанию видим
   infoEl.classList.remove('hidden');
+  return true;
 }
 
 function syncOverlayVisibility(pswp) {
   const info = document.getElementById("pswp-info");
   if (!info) return;
 
-  // ВАЖНО: берём реальный zoom из pswp, а не из event
   const z = pswp.currZoomLevel || 1;
-
-  // небольшой порог, чтобы не мигало на 1.0001
   info.classList.toggle('hidden', z > 1.02);
 }
 
 lightbox.on('open', () => {
   const pswp = lightbox.pswp;
 
-  updateOverlay(currentProduct);
+  // ✅ ждём 1 кадр, чтобы DOM UI точно появился
+  requestAnimationFrame(() => {
+    updateOverlay(currentProduct);
+    syncOverlayVisibility(pswp);
+  });
 
-  // сразу выставляем корректную видимость
-  syncOverlayVisibility(pswp);
-
-  // обновляем при любом зуме/панорамировании
   pswp.on('zoomPanUpdate', () => syncOverlayVisibility(pswp));
 
-  // double tap zoom
   pswp.on('doubleTap', () => {
     const scale = pswp.currZoomLevel > 1 ? 1 : 2;
     pswp.zoomTo(scale, { x: pswp.viewportSize.x/2, y: pswp.viewportSize.y/2 });
@@ -470,4 +467,3 @@ renderCategories();
 
 </body>
 </html>
-
