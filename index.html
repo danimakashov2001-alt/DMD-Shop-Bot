@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Каталог товаров</title>
-
 <link rel="stylesheet" href="https://unpkg.com/photoswipe@5/dist/photoswipe.css">
 
 <style>
@@ -47,7 +46,7 @@ header{
 import PhotoSwipeLightbox from 'https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.esm.min.js';
 import PhotoSwipe from 'https://unpkg.com/photoswipe@5/dist/photoswipe.esm.min.js';
 
-// ====== Данные товаров ======
+// ====== Массив товаров, можно менять ======
 const products=[
 {
 name:"Зип худи Zara Type crop fit (серый)",
@@ -105,7 +104,7 @@ photos:[
 }
 ];
 
-// ====== Каталог ======
+// ====== Создание каталога ======
 const catalog = document.getElementById("catalog");
 
 products.forEach(product => {
@@ -119,6 +118,7 @@ products.forEach(product => {
   `;
   card.onclick = () => {
     const items = product.photos.map(src => ({ src, width:1600, height:2000 }));
+
     const lightbox = new PhotoSwipeLightbox({
       dataSource: items,
       pswpModule: PhotoSwipe,
@@ -127,6 +127,7 @@ products.forEach(product => {
       mouseDrag: true
     });
 
+    // overlay с информацией
     lightbox.on('uiRegister', () => {
       lightbox.pswp.ui.registerElement({
         name:'custom-info',
@@ -142,11 +143,13 @@ products.forEach(product => {
       });
     });
 
+    // скрытие overlay при зуме
     lightbox.on('zoomPanUpdate', (e) => {
       const info = document.getElementById("pswp-info");
       if(info) info.classList.toggle('hidden', e.scale > 1);
     });
 
+    // double tap / double click zoom
     lightbox.on('doubleTap', (e) => {
       const pswp = lightbox.pswp;
       const scale = pswp.currZoomLevel > 1 ? 1 : 2;
