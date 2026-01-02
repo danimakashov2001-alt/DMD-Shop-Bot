@@ -123,8 +123,6 @@
   .empty{ padding:14px; color:rgba(255,255,255,0.85); font-size:13px; }
 
   /* ===== PhotoSwipe: описание снизу ===== */
-  .pswp { overscroll-behavior: contain; }
-
   .pswp__custom-caption{
     position:absolute;
     left:0; right:0; bottom:0;
@@ -141,7 +139,7 @@
     pointer-events:none;
     text-shadow: 0 1px 2px rgba(0,0,0,0.65);
   }
-  /* не display:none — только прозрачность */
+  /* Важно: НЕ display:none */
   .pswp__custom-caption.pswp-caption--hidden{ opacity:0; }
 
   .pswp__custom-caption .title{
@@ -185,12 +183,6 @@
 
 <script type="module">
 import PhotoSwipeLightbox from 'https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.esm.min.js';
-
-/* Telegram: отключаем вертикальные свайпы закрытия (если доступно) */
-try {
-  const tg = window.Telegram?.WebApp;
-  if (tg?.disableVerticalSwipes) tg.disableVerticalSwipes();
-} catch (_) {}
 
 /* ====== Данные ====== */
 const products = [
@@ -372,16 +364,21 @@ const lightbox = new PhotoSwipeLightbox({
   wheelToZoom: true,
   arrowKeys: true,
 
-  // ✅ ВАЖНО: опции PhotoSwipe кладём сюда
+  // опции PhotoSwipe — сюда
   pswpOptions: {
-    closeOnVerticalDrag: false,
-    pinchToClose: false,
     closeOnScroll: false
   }
 });
 
-lightbox.on('uiRegister', (e) => {
-  e.pswp.ui.registerElement({
+/**
+ * ✅ FIX: uiRegister вызывается без аргументов.
+ * Берём pswp из lightbox.pswp.
+ */
+lightbox.on('uiRegister', () => {
+  const pswp = lightbox.pswp;
+  if (!pswp || !pswp.ui) return;
+
+  pswp.ui.registerElement({
     name: 'custom-caption',
     order: 9,
     isButton: false,
@@ -422,7 +419,6 @@ function syncCaptionVisibility(pswp) {
 lightbox.on('open', () => {
   const pswp = lightbox.pswp;
 
-  // подождём кадр — UI уже в DOM
   requestAnimationFrame(() => {
     fillCaption(currentProduct);
     syncCaptionVisibility(pswp);
@@ -430,7 +426,6 @@ lightbox.on('open', () => {
 
   pswp.on('zoomPanUpdate', () => syncCaptionVisibility(pswp));
 
-  // double tap zoom (без конфликтных закрытий)
   pswp.on('doubleTap', () => {
     const scale = pswp.currZoomLevel > 1 ? 1 : 2;
     pswp.zoomTo(scale, { x: pswp.viewportSize.x/2, y: pswp.viewportSize.y/2 });
@@ -455,7 +450,6 @@ catalog.addEventListener("click", (e) => {
     height: 2000
   }));
 
-  // ✅ правильный вызов
   lightbox.loadAndOpen(0, items);
 });
 
