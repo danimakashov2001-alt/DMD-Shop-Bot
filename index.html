@@ -14,8 +14,6 @@
     color:#fff;
     background: url("https://iili.io/fXfx3ep.jpg") center / cover no-repeat;
     background-color:#0b0b0b;
-
-    /* важно для WebView/мобилок, чтобы не было “резиновой” прокрутки */
     overscroll-behavior: none;
   }
   body::before{
@@ -143,7 +141,7 @@
     pointer-events:none;
     text-shadow: 0 1px 2px rgba(0,0,0,0.65);
   }
-  /* ВАЖНО: не display:none, только прозрачность */
+  /* не display:none — только прозрачность */
   .pswp__custom-caption.pswp-caption--hidden{ opacity:0; }
 
   .pswp__custom-caption .title{
@@ -188,13 +186,13 @@
 <script type="module">
 import PhotoSwipeLightbox from 'https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.esm.min.js';
 
-/* ===== Telegram: выключаем вертикальные свайпы закрытия (если доступно) ===== */
+/* Telegram: отключаем вертикальные свайпы закрытия (если доступно) */
 try {
   const tg = window.Telegram?.WebApp;
-  if (tg?.disableVerticalSwipes) tg.disableVerticalSwipes(); // :contentReference[oaicite:2]{index=2}
-} catch (_) { /* в браузере игнор */ }
+  if (tg?.disableVerticalSwipes) tg.disableVerticalSwipes();
+} catch (_) {}
 
-// ====== Товары ======
+/* ====== Данные ====== */
 const products = [
   {
     name:"Зип худи Zara Type crop fit (серый)",
@@ -252,7 +250,6 @@ const products = [
   }
 ];
 
-// ====== Категории ======
 const categoryTree = [
   { title: "Головные уборы", subs: ["Шапки", "Кепки"] },
   { title: "Верх", subs: ["Зип Худи", "Лонгсливы", "Футболки"] },
@@ -272,7 +269,7 @@ function statusClass(status){
   return "";
 }
 
-// ====== DOM ======
+/* ====== DOM ====== */
 const headerTitle = document.getElementById("headerTitle");
 const toggleBtn = document.getElementById("toggleBtn");
 const productsPage = document.getElementById("productsPage");
@@ -282,8 +279,9 @@ const categoriesEl = document.getElementById("categories");
 const emptyState = document.getElementById("emptyState");
 
 let currentFilter = null;
+let currentProduct = null;
 
-// ====== Рендер товаров ======
+/* ====== Рендер товаров ====== */
 function renderProducts() {
   catalog.innerHTML = "";
   emptyState.classList.add("is-hidden");
@@ -302,6 +300,8 @@ function renderProducts() {
 
     const card = document.createElement("div");
     card.className = "card";
+    card.__product = product;
+
     card.innerHTML = `
       <img src="${product.photos[0]}" alt="">
       <div class="card-body">
@@ -310,12 +310,11 @@ function renderProducts() {
         <div class="price">${product.price}</div>
       </div>
     `;
-    card.__product = product;
     catalog.appendChild(card);
   });
 }
 
-// ====== Рендер категорий ======
+/* ====== Рендер категорий ====== */
 function renderCategories() {
   categoriesEl.innerHTML = "";
   categoryTree.forEach(cat => {
@@ -339,7 +338,7 @@ function renderCategories() {
   });
 }
 
-// ====== Переключение экранов ======
+/* ====== Переключение экранов ====== */
 function openCategories() {
   productsPage.classList.add("is-hidden");
   categoriesPage.classList.remove("is-hidden");
@@ -357,36 +356,31 @@ toggleBtn.addEventListener("click", () => {
   isOpen ? closeCategories() : openCategories();
 });
 
-// ====== Клик по подкатегории ======
 categoriesEl.addEventListener("click", (e) => {
   const chip = e.target.closest(".chip");
   if (!chip) return;
 
-  const subName = chip.dataset.subname;
-  const mapped = subcategoryMap[subName];
-
+  const mapped = subcategoryMap[chip.dataset.subname];
   currentFilter = mapped || "__none__";
   renderProducts();
   closeCategories();
 });
 
-// ====== PhotoSwipe ======
-let currentProduct = null;
-
+/* ====== PhotoSwipe ====== */
 const lightbox = new PhotoSwipeLightbox({
   pswpModule: () => import('https://unpkg.com/photoswipe@5/dist/photoswipe.esm.min.js'),
-
   wheelToZoom: true,
   arrowKeys: true,
 
-  /* КРИТИЧНО: выключаем закрытие жестами, чтобы не конфликтовало */
-  closeOnVerticalDrag: false,
-  pinchToClose: false,
-  closeOnScroll: false
+  // ✅ ВАЖНО: опции PhotoSwipe кладём сюда
+  pswpOptions: {
+    closeOnVerticalDrag: false,
+    pinchToClose: false,
+    closeOnScroll: false
+  }
 });
 
 lightbox.on('uiRegister', (e) => {
-  // Регистрируем нижнее описание
   e.pswp.ui.registerElement({
     name: 'custom-caption',
     order: 9,
@@ -415,23 +409,20 @@ function fillCaption(product) {
   const stCls = statusClass(product?.status);
   const statusHtml = product?.status ? `<span class="${stCls}">${product.status}</span>` : '';
   const priceHtml = product?.price != null ? `<span>${product.price}</span>` : '';
-
   m.innerHTML = `${statusHtml}${priceHtml ? " • " + priceHtml : ""}`;
 }
 
 function syncCaptionVisibility(pswp) {
   const cap = document.getElementById('pswpCaption');
   if (!cap) return;
-
   const z = pswp.currZoomLevel || 1;
-  // показываем на 1x, прячем при реальном увеличении
   cap.classList.toggle('pswp-caption--hidden', z > 1.02);
 }
 
 lightbox.on('open', () => {
   const pswp = lightbox.pswp;
 
-  // ждём, чтобы UI точно появился в DOM
+  // подождём кадр — UI уже в DOM
   requestAnimationFrame(() => {
     fillCaption(currentProduct);
     syncCaptionVisibility(pswp);
@@ -439,7 +430,7 @@ lightbox.on('open', () => {
 
   pswp.on('zoomPanUpdate', () => syncCaptionVisibility(pswp));
 
-  // double tap zoom (но без конфликтного “pinchToClose”)
+  // double tap zoom (без конфликтных закрытий)
   pswp.on('doubleTap', () => {
     const scale = pswp.currZoomLevel > 1 ? 1 : 2;
     pswp.zoomTo(scale, { x: pswp.viewportSize.x/2, y: pswp.viewportSize.y/2 });
@@ -448,7 +439,7 @@ lightbox.on('open', () => {
 
 lightbox.init();
 
-// ====== Клик по товару ======
+/* ====== Открытие карточек ====== */
 catalog.addEventListener("click", (e) => {
   const card = e.target.closest(".card");
   if (!card) return;
@@ -464,10 +455,11 @@ catalog.addEventListener("click", (e) => {
     height: 2000
   }));
 
+  // ✅ правильный вызов
   lightbox.loadAndOpen(0, items);
 });
 
-// init
+/* init */
 renderProducts();
 renderCategories();
 </script>
