@@ -73,7 +73,6 @@
   .card:hover{transform:scale(1.03);}
   .card img{ width:100%; height:210px; object-fit:cover; display:block; }
 
-  /* блок под фото темнее */
   .card-body{
     position:absolute;
     left:0; right:0; bottom:0;
@@ -103,8 +102,8 @@
   }
 
   .status{ display:inline-block; margin-top:6px; font-weight:900; }
-  .status.instock{ color:#38d66b; } /* зелёный */
-  .status.inway{ color:#ffd54a; }   /* жёлтый */
+  .status.instock{ color:#38d66b; }
+  .status.inway{ color:#ffd54a; }
   .price{ margin-top:6px; font-weight:900; opacity:0.95; }
 
   /* категории */
@@ -135,12 +134,12 @@
   .empty{ padding:14px; color:rgba(255,255,255,0.85); font-size:13px; }
 
   /* =========================================================
-     ✅ Caption ВНУТРИ PhotoSwipe (pswp.element)
+     ✅ Caption внутри PhotoSwipe
      ========================================================= */
   .pswp__guru-caption{
     position:absolute;
     left:0; right:0; bottom:0;
-    z-index: 100000; /* выше UI */
+    z-index: 100000;
     box-sizing:border-box;
 
     padding:14px 16px;
@@ -153,7 +152,7 @@
 
     pointer-events:none;
     text-shadow: 0 1px 2px rgba(0,0,0,0.65);
-    transition:opacity .18s ease;
+    transition:opacity .16s ease;
     opacity:1;
   }
   .pswp__guru-caption.is-hidden-by-zoom{ opacity:0; }
@@ -164,7 +163,7 @@
     margin-bottom:6px;
   }
   .pswp__guru-caption .desc{
-    white-space:pre-line; /* ✅ переносы */
+    white-space:pre-line;
     opacity:0.96;
   }
   .pswp__guru-caption .meta{
@@ -177,6 +176,9 @@
   }
   .pswp__guru-caption .instock{ color:#38d66b; }
   .pswp__guru-caption .inway{ color:#ffd54a; }
+
+  /* ✅ делаем фото визуально “крупнее”: меньше системных отступов */
+  .pswp__scroll-wrap { padding:0 !important; }
 </style>
 </head>
 
@@ -320,7 +322,7 @@ const emptyState = document.getElementById("emptyState");
 let currentFilter = null;
 let currentProduct = null;
 
-/* ====== Рендер товаров (description в ленте) ====== */
+/* ====== Рендер товаров ====== */
 function renderProducts() {
   catalog.innerHTML = "";
   emptyState.classList.add("is-hidden");
@@ -399,17 +401,16 @@ toggleBtn.addEventListener("click", () => {
 categoriesEl.addEventListener("click", (e) => {
   const chip = e.target.closest(".chip");
   if (!chip) return;
+
   const mapped = subcategoryMap[chip.dataset.subname];
   currentFilter = mapped || "__none__";
   renderProducts();
   closeCategories();
 });
 
-/* =========================================================
-   ✅ ГУРУ-CAPTION: создаём/обновляем после afterInit
-   ========================================================= */
+/* ====== Caption внутри PhotoSwipe ====== */
 function ensureGuruCaption(pswp) {
-  const root = pswp.element; // самый надёжный контейнер оверлея
+  const root = pswp.element;
   if (!root) return null;
 
   let cap = root.querySelector('#guruCaption');
@@ -435,7 +436,6 @@ function fillGuruCaption(product) {
 
   t.textContent = product?.name ?? '';
 
-  // ✅ fullDescription в открытой карточке
   const text = (product?.fullDescription && String(product.fullDescription).trim())
     ? product.fullDescription
     : (product?.description ?? '');
@@ -447,11 +447,17 @@ function fillGuruCaption(product) {
   m.innerHTML = `${statusHtml}${priceHtml ? " • " + priceHtml : ""}`;
 }
 
+/* ✅ скрывать при ЛЮБОМ увеличении, показывать при возврате к 1x */
 function syncGuruCaptionVisibility(pswp) {
   const cap = document.getElementById('guruCaption');
   if (!cap) return;
+
   const z = pswp.currZoomLevel || 1;
-  cap.classList.toggle('is-hidden-by-zoom', z > 1.02);
+
+  // Любое увеличение => скрываем
+  // Возврат к исходному (примерно 1.0) => показываем
+  const isBase = Math.abs(z - 1) < 0.001;
+  cap.classList.toggle('is-hidden-by-zoom', !isBase);
 }
 
 /* ====== PhotoSwipe ====== */
@@ -459,27 +465,27 @@ const lightbox = new PhotoSwipeLightbox({
   pswpModule: () => import('https://unpkg.com/photoswipe@5/dist/photoswipe.esm.min.js'),
   wheelToZoom: true,
   arrowKeys: true,
-  pswpOptions: { closeOnScroll: false }
+  pswpOptions: {
+    closeOnScroll: false,
+    bgOpacity: 1,      // визуально “крупнее” фото
+    padding: { top: 0, bottom: 0, left: 0, right: 0 } // больше площади под фото
+  }
 });
 
 lightbox.on('afterInit', () => {
   const pswp = lightbox.pswp;
 
-  // ✅ caption гарантированно создаётся ТОЛЬКО когда pswp уже готов
   ensureGuruCaption(pswp);
   fillGuruCaption(currentProduct);
   syncGuruCaptionVisibility(pswp);
 
-  // обновляем при любом изменении зума/пана
   pswp.on('zoomPanUpdate', () => syncGuruCaptionVisibility(pswp));
 
-  // даблтап как раньше
   pswp.on('doubleTap', () => {
-    const scale = pswp.currZoomLevel > 1 ? 1 : 2;
+    const scale = (Math.abs((pswp.currZoomLevel || 1) - 1) < 0.001) ? 2 : 1;
     pswp.zoomTo(scale, { x: pswp.viewportSize.x/2, y: pswp.viewportSize.y/2 });
   });
 
-  // очистка
   pswp.on('destroy', () => {
     const cap = document.getElementById('guruCaption');
     if (cap) cap.remove();
