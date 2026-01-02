@@ -8,12 +8,15 @@
 <link rel="stylesheet" href="https://unpkg.com/photoswipe@5/dist/photoswipe.css">
 
 <style>
-  body, html {
+  html, body {
     margin:0; padding:0; width:100%; height:100%;
     font-family:-apple-system,BlinkMacSystemFont,Arial;
     color:#fff;
     background: url("https://iili.io/fXfx3ep.jpg") center / cover no-repeat;
     background-color:#0b0b0b;
+
+    /* важно для WebView/мобилок, чтобы не было “резиновой” прокрутки */
+    overscroll-behavior: none;
   }
   body::before{
     content:"";
@@ -117,11 +120,14 @@
   .chip:active{ transform:scale(0.98); }
   .hint{ padding:0 14px 14px; color:rgba(255,255,255,0.78); font-size:12px; }
 
-  .hidden{ display:none !important; }
+  /* общие */
+  .is-hidden{ display:none !important; }
   .empty{ padding:14px; color:rgba(255,255,255,0.85); font-size:13px; }
 
-  /* ===== PhotoSwipe описание снизу ===== */
-  .pswp__custom-info{
+  /* ===== PhotoSwipe: описание снизу ===== */
+  .pswp { overscroll-behavior: contain; }
+
+  .pswp__custom-caption{
     position:absolute;
     left:0; right:0; bottom:0;
     z-index: 99999;
@@ -135,22 +141,22 @@
     font-size:13px;
     transition:opacity .18s ease;
     pointer-events:none;
-
     text-shadow: 0 1px 2px rgba(0,0,0,0.65);
   }
-  .pswp__custom-info.hidden{ opacity:0; }
+  /* ВАЖНО: не display:none, только прозрачность */
+  .pswp__custom-caption.pswp-caption--hidden{ opacity:0; }
 
-  .pswp__custom-info b{
+  .pswp__custom-caption .title{
     font-size:15px;
-    display:block;
+    font-weight:800;
     margin-bottom:6px;
   }
-  .pswp__desc{
+  .pswp__custom-caption .desc{
     white-space:pre-line;
     line-height:1.35;
     opacity:0.95;
   }
-  .pswp__meta{
+  .pswp__custom-caption .meta{
     margin-top:8px;
     font-weight:800;
     display:flex;
@@ -158,8 +164,8 @@
     align-items:center;
     flex-wrap:wrap;
   }
-  .pswp__meta .instock{ color:#38d66b; }
-  .pswp__meta .inway{ color:#ffd54a; }
+  .pswp__custom-caption .instock{ color:#38d66b; }
+  .pswp__custom-caption .inway{ color:#ffd54a; }
 </style>
 </head>
 
@@ -171,16 +177,22 @@
 
 <div class="page" id="productsPage">
   <div class="catalog" id="catalog"></div>
-  <div class="empty hidden" id="emptyState">Пока нет товаров в этой подкатегории.</div>
+  <div class="empty is-hidden" id="emptyState">Пока нет товаров в этой подкатегории.</div>
 </div>
 
-<div class="page hidden" id="categoriesPage">
+<div class="page is-hidden" id="categoriesPage">
   <div class="categories" id="categories"></div>
   <div class="hint">Нажми на подкатегорию — покажу товары.</div>
 </div>
 
 <script type="module">
 import PhotoSwipeLightbox from 'https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.esm.min.js';
+
+/* ===== Telegram: выключаем вертикальные свайпы закрытия (если доступно) ===== */
+try {
+  const tg = window.Telegram?.WebApp;
+  if (tg?.disableVerticalSwipes) tg.disableVerticalSwipes(); // :contentReference[oaicite:2]{index=2}
+} catch (_) { /* в браузере игнор */ }
 
 // ====== Товары ======
 const products = [
@@ -274,14 +286,14 @@ let currentFilter = null;
 // ====== Рендер товаров ======
 function renderProducts() {
   catalog.innerHTML = "";
-  emptyState.classList.add("hidden");
+  emptyState.classList.add("is-hidden");
 
   const list = currentFilter
     ? products.filter(p => p.subcategory === currentFilter)
     : products;
 
   if (list.length === 0) {
-    emptyState.classList.remove("hidden");
+    emptyState.classList.remove("is-hidden");
     return;
   }
 
@@ -329,19 +341,19 @@ function renderCategories() {
 
 // ====== Переключение экранов ======
 function openCategories() {
-  productsPage.classList.add("hidden");
-  categoriesPage.classList.remove("hidden");
+  productsPage.classList.add("is-hidden");
+  categoriesPage.classList.remove("is-hidden");
   toggleBtn.textContent = "Назад";
   headerTitle.textContent = "📚 Категории";
 }
 function closeCategories() {
-  categoriesPage.classList.add("hidden");
-  productsPage.classList.remove("hidden");
+  categoriesPage.classList.add("is-hidden");
+  productsPage.classList.remove("is-hidden");
   toggleBtn.textContent = "Категории";
   headerTitle.textContent = currentFilter ? "🛍 Каталог • фильтр" : "🛍 Каталог";
 }
 toggleBtn.addEventListener("click", () => {
-  const isOpen = !categoriesPage.classList.contains("hidden");
+  const isOpen = !categoriesPage.classList.contains("is-hidden");
   isOpen ? closeCategories() : openCategories();
 });
 
@@ -363,76 +375,71 @@ let currentProduct = null;
 
 const lightbox = new PhotoSwipeLightbox({
   pswpModule: () => import('https://unpkg.com/photoswipe@5/dist/photoswipe.esm.min.js'),
+
   wheelToZoom: true,
-  arrowKeys: true
+  arrowKeys: true,
+
+  /* КРИТИЧНО: выключаем закрытие жестами, чтобы не конфликтовало */
+  closeOnVerticalDrag: false,
+  pinchToClose: false,
+  closeOnScroll: false
 });
 
-/**
- * ✅ КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ:
- * регистрируем UI через событие uiRegister: e.pswp.ui.registerElement(...)
- * (так работает стабильно в браузере + Telegram WebView)
- */
 lightbox.on('uiRegister', (e) => {
+  // Регистрируем нижнее описание
   e.pswp.ui.registerElement({
-    name: 'custom-info',
+    name: 'custom-caption',
     order: 9,
     isButton: false,
     appendTo: 'root',
     html: `
-      <div class="pswp__custom-info" id="pswp-info">
-        <b id="pswp-name"></b>
-        <div class="pswp__desc" id="pswp-desc"></div>
-        <div class="pswp__meta" id="pswp-meta"></div>
+      <div class="pswp__custom-caption" id="pswpCaption">
+        <div class="title" id="pswpTitle"></div>
+        <div class="desc" id="pswpDesc"></div>
+        <div class="meta" id="pswpMeta"></div>
       </div>
     `
   });
 });
 
-function updateOverlay(product) {
-  const nameEl = document.getElementById('pswp-name');
-  const descEl = document.getElementById('pswp-desc');
-  const metaEl = document.getElementById('pswp-meta');
-  const infoEl = document.getElementById('pswp-info');
+function fillCaption(product) {
+  const cap = document.getElementById('pswpCaption');
+  const t = document.getElementById('pswpTitle');
+  const d = document.getElementById('pswpDesc');
+  const m = document.getElementById('pswpMeta');
+  if (!cap || !t || !d || !m) return;
 
-  // если вдруг ещё не вставилось — просто выходим (в open мы вызовем снова)
-  if (!nameEl || !descEl || !metaEl || !infoEl) return false;
-
-  nameEl.textContent = product?.name ?? '';
-  descEl.textContent = product?.description ?? '';
+  t.textContent = product?.name ?? '';
+  d.textContent = product?.description ?? '';
 
   const stCls = statusClass(product?.status);
-  const statusHtml = product?.status
-    ? `<span class="${stCls}">${product.status}</span>`
-    : '';
-
+  const statusHtml = product?.status ? `<span class="${stCls}">${product.status}</span>` : '';
   const priceHtml = product?.price != null ? `<span>${product.price}</span>` : '';
 
-  metaEl.innerHTML = `${statusHtml}${priceHtml ? " • " + priceHtml : ""}`;
-
-  // по умолчанию видим
-  infoEl.classList.remove('hidden');
-  return true;
+  m.innerHTML = `${statusHtml}${priceHtml ? " • " + priceHtml : ""}`;
 }
 
-function syncOverlayVisibility(pswp) {
-  const info = document.getElementById("pswp-info");
-  if (!info) return;
+function syncCaptionVisibility(pswp) {
+  const cap = document.getElementById('pswpCaption');
+  if (!cap) return;
 
   const z = pswp.currZoomLevel || 1;
-  info.classList.toggle('hidden', z > 1.02);
+  // показываем на 1x, прячем при реальном увеличении
+  cap.classList.toggle('pswp-caption--hidden', z > 1.02);
 }
 
 lightbox.on('open', () => {
   const pswp = lightbox.pswp;
 
-  // ✅ ждём 1 кадр, чтобы DOM UI точно появился
+  // ждём, чтобы UI точно появился в DOM
   requestAnimationFrame(() => {
-    updateOverlay(currentProduct);
-    syncOverlayVisibility(pswp);
+    fillCaption(currentProduct);
+    syncCaptionVisibility(pswp);
   });
 
-  pswp.on('zoomPanUpdate', () => syncOverlayVisibility(pswp));
+  pswp.on('zoomPanUpdate', () => syncCaptionVisibility(pswp));
 
+  // double tap zoom (но без конфликтного “pinchToClose”)
   pswp.on('doubleTap', () => {
     const scale = pswp.currZoomLevel > 1 ? 1 : 2;
     pswp.zoomTo(scale, { x: pswp.viewportSize.x/2, y: pswp.viewportSize.y/2 });
@@ -467,4 +474,3 @@ renderCategories();
 
 </body>
 </html>
-
