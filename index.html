@@ -43,11 +43,12 @@ header{
 
 <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true"></div>
 
-<script src="https://unpkg.com/photoswipe@5/dist/photoswipe.umd.min.js"></script>
-<script src="https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.umd.min.js"></script>
+<script src="https://unpkg.com/photoswipe@5/dist/photoswipe.umd.min.js" defer></script>
+<script src="https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.umd.min.js" defer></script>
 
 <script>
-// ====== Данные товаров ======
+document.addEventListener('DOMContentLoaded', ()=>{
+  // ====== Данные товаров ======
 const products=[
 {
 name:"Зип худи Zara Type crop fit (серый)",
@@ -105,69 +106,57 @@ photos:[
 }
 ];
 
-// ====== Каталог ======
-const catalog = document.getElementById("catalog");
+  const catalog = document.getElementById("catalog");
 
-products.forEach((p,index)=>{
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `
-    <img src="${p.photos[0]}">
-    <div class="card-body">
-      ${p.name}<br><span class="status">${p.status}</span><br>${p.price}
-    </div>
-  `;
-  // Ключевой момент: по клику открываем Lightbox с массивом фото для этого товара
-  card.onclick = ()=>{
-    openGallery(p);
-  };
-  catalog.appendChild(card);
+  products.forEach((p)=>{
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <img src="${p.photos[0]}">
+      <div class="card-body">
+        ${p.name}<br><span class="status">${p.status}</span><br>${p.price}
+      </div>
+    `;
+    card.onclick = ()=>{
+      // Здесь используем глобальный объект
+      const items = p.photos.map(src=>({src,width:1600,height:2000}));
+      const lightbox = new window.PhotoSwipeLightbox({
+        dataSource: items,
+        pswpModule: window.PhotoSwipe,
+        wheelToZoom: true,
+        arrowKeys: true,
+        mouseDrag: true
+      });
+
+      lightbox.on('uiRegister', ()=>{
+        lightbox.pswp.ui.registerElement({
+          name:'custom-info',
+          order:9,
+          isButton:false,
+          appendTo:'root',
+          html:`<div class="pswp__custom-info" id="pswp-info">
+            <b>${p.name}</b><br>
+            ${p.description}<br>
+            ${p.status}
+            <div class="price">${p.price}</div>
+          </div>`
+        });
+      });
+
+      lightbox.on('zoomPanUpdate',(e)=>{
+        const info = document.getElementById("pswp-info");
+        if(info) info.classList.toggle('hidden', e.scale>1);
+      });
+
+      lightbox.on('doubleTap',(e)=>{
+        const pswp = lightbox.pswp;
+        const scale = pswp.currZoomLevel>1 ? 1 : 2;
+        pswp.zoomTo(scale,{x:pswp.viewportSize.x/2,y:pswp.viewportSize.y/2});
+      });
+
+      lightbox.init();
+    };
+    catalog.appendChild(card);
+  });
 });
-
-// ====== Функция открытия галереи ======
-function openGallery(product){
-  const items = product.photos.map(src=>({src, width:1600, height:2000}));
-
-  const lightbox = new PhotoSwipeLightbox({
-    dataSource: items,
-    pswpModule: PhotoSwipe,
-    wheelToZoom: true,
-    arrowKeys: true,
-    mouseDrag: true,
-    spacing:0.1,
-    bgOpacity:1
-  });
-
-  lightbox.on('uiRegister', ()=>{
-    lightbox.pswp.ui.registerElement({
-      name:'custom-info',
-      order:9,
-      isButton:false,
-      appendTo:'root',
-      html:`<div class="pswp__custom-info" id="pswp-info">
-        <b>${product.name}</b><br>
-        ${product.description}<br>
-        ${product.status}
-        <div class="price">${product.price}</div>
-      </div>`
-    });
-  });
-
-  // скрытие overlay при зуме
-  lightbox.on('zoomPanUpdate', (e)=>{
-    const info = document.getElementById("pswp-info");
-    if(info) info.classList.toggle('hidden', e.scale > 1);
-  });
-
-  // double tap / click zoom
-  lightbox.on('doubleTap', (e)=>{
-    const pswp = lightbox.pswp;
-    const scale = pswp.currZoomLevel > 1 ? 1 : 2;
-    pswp.zoomTo(scale, {x:pswp.viewportSize.x/2, y:pswp.viewportSize.y/2});
-  });
-
-  lightbox.init();
-}
 </script>
-</body>
-</html>
