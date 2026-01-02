@@ -2,40 +2,89 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Каталог товаров</title>
-
-<!-- PhotoSwipe 5 через CDN -->
-<link rel="stylesheet" href="https://unpkg.com/photoswipe@5/dist/photoswipe.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Каталог</title>
 
 <style>
 :root { --accent:#c49a6c; }
 * { margin:0; padding:0; box-sizing:border-box; }
-html, body { width:100%; height:100%; font-family:-apple-system,BlinkMacSystemFont,Arial; background:#0b0b0b; color:#fff; overscroll-behavior:none; }
+html,body {
+  width:100%; height:100%;
+  font-family:-apple-system,BlinkMacSystemFont,Arial;
+  background:#0b0b0b; color:#fff;
+  overflow:hidden;
+}
 
-header { height:46px; display:flex; align-items:center; padding:0 14px; background:rgba(15,15,15,.95); font-size:16px; }
-.catalog { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; padding:14px; overflow-y:auto; height:calc(100vh - 46px); }
-.card { background:#fff; color:#000; border-radius:16px; overflow:hidden; cursor:pointer; transition:transform 0.2s; }
-.card:hover { transform:scale(1.03); }
+/* Каталог */
+header {
+  height:46px; display:flex; align-items:center;
+  padding:0 14px;
+  background:rgba(15,15,15,.95);
+}
+.catalog {
+  height:calc(100vh - 46px);
+  overflow-y:auto;
+  padding:14px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:14px;
+}
+.card {
+  background:#fff; color:#000;
+  border-radius:16px; overflow:hidden;
+}
 .card img { width:100%; height:210px; object-fit:cover; }
 .card-body { padding:10px; font-size:13px; }
 
-/* Product Info Overlay */
-.pswp__custom-info {
-  position:absolute;
-  bottom:0;
-  left:0; right:0;
-  padding:12px 16px;
-  background:linear-gradient(180deg,transparent,rgba(0,0,0,0.8));
-  color:#fff;
-  font-size:13px;
-  max-height:25%;
-  overflow-y:auto;
+/* Галерея */
+#gallery {
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:none;
+  z-index:100;
 }
-.pswp__custom-info .info-name { font-weight:600; font-size:14px; margin-bottom:2px; }
-.pswp__custom-info .info-desc { font-size:12px; color:#ccc; margin-bottom:2px; }
-.pswp__custom-info .info-status { font-size:12px; color:#7cb342; margin-bottom:2px; }
-.pswp__custom-info .info-price { color:var(--accent); font-weight:600; font-size:13px; }
+.viewer {
+  width:100%; height:100%;
+  overflow:hidden;
+  touch-action:pan-y;
+}
+.track {
+  display:flex;
+  height:100%;
+  transition:transform .35s ease;
+}
+.slide {
+  min-width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.slide img {
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  user-select:none;
+  touch-action:none;
+  transform-origin:center center;
+}
+
+.info {
+  position:absolute;
+  bottom:0; left:0; right:0;
+  padding:12px 16px;
+  background:linear-gradient(transparent,rgba(0,0,0,.85));
+  font-size:13px;
+}
+.info .price { color:var(--accent); font-weight:600; }
+
+.close {
+  position:absolute;
+  top:10px; right:14px;
+  font-size:28px;
+  cursor:pointer;
+}
 </style>
 </head>
 <body>
@@ -43,39 +92,15 @@ header { height:46px; display:flex; align-items:center; padding:0 14px; backgrou
 <header>🛍 Каталог</header>
 <div class="catalog" id="catalog"></div>
 
-<!-- PhotoSwipe -->
-<div class="pswp" id="pswp" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="pswp__bg"></div>
-  <div class="pswp__scroll-wrap">
-    <div class="pswp__container">
-      <div class="pswp__item"></div>
-      <div class="pswp__item"></div>
-      <div class="pswp__item"></div>
-    </div>
-    <div class="pswpui pswpui--hidden">
-      <div class="pswp__top-bar">
-        <div class="pswp__counter"></div>
-        <button class="pswpbutton pswpbutton--close" title="Закрыть (Esc)"></button>
-        <button class="pswpbutton pswpbutton--fs" title="Полный экран"></button>
-        <button class="pswpbutton pswpbutton--zoom" title="Увеличить/уменьшить"></button>
-      </div>
-      <div class="pswp__preloader">
-        <div class="pswppreloadericn">
-          <div class="pswppreloadercut">
-            <div class="pswppreloaderdonut"></div>
-          </div>
-        </div>
-      </div>
-      <div class="pswp__custom-info" id="pswp-info"></div>
-    </div>
+<div id="gallery">
+  <div class="viewer" id="viewer">
+    <div class="track" id="track"></div>
   </div>
+  <div class="close" onclick="closeGallery()">✕</div>
+  <div class="info" id="info"></div>
 </div>
 
-<!-- PhotoSwipe Lightbox через CDN -->
-<script type="module" src="https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.esm.min.js"></script>
-
-<script type="module">
-// ====== Каталог товаров ======
+<script>
 const products=[
 {
 name:"Зип худи Zara Type crop fit (серый)",
@@ -133,56 +158,112 @@ photos:[
 }
 ];
 
-// ====== Рендер каталога ======
-const catalogEl = document.getElementById('catalog');
+const catalog = document.getElementById("catalog");
+const gallery = document.getElementById("gallery");
+const track = document.getElementById("track");
+const info = document.getElementById("info");
+const viewer = document.getElementById("viewer");
 
-products.forEach((p, pi) => {
-  const card = document.createElement('div');
-  card.className = 'card';
-  card.innerHTML = `
-    <img src="${p.photos[0]}" alt="${p.name}">
-    <div class="card-body">${p.name}<br>${p.price} ₽</div>
-  `;
-  catalogEl.appendChild(card);
+let index = 0;
+let scale = 1;
+let x = 0, y = 0;
+let startX = 0;
+let isPanning = false;
 
-  // Клик по карточке открывает галерею
-  card.addEventListener('click', () => {
-    openGallery(pi);
-  });
+products.forEach((p,i)=>{
+  const c=document.createElement("div");
+  c.className="card";
+  c.innerHTML=`<img src="${p.photos[0]}"><div class="card-body">${p.name}<br>${p.price} ₽</div>`;
+  c.onclick=()=>openGallery(i);
+  catalog.appendChild(c);
 });
 
-// ====== PhotoSwipe галерея ======
-let lightbox;
-
-function openGallery(productIndex) {
-  const product = products[productIndex];
-
-  const items = product.photos.map(url => ({ src: url, w: 1200, h: 900 }));
-
-  if(lightbox) lightbox.destroy(); // Если уже открыт, удаляем прошлый
-
-  lightbox = new PhotoSwipeLightbox({
-    dataSource: items,
-    pswpModule: PhotoSwipe,
-    showHideAnimationType: 'fade',
-    zoom: true
+function openGallery(i){
+  index = 0;
+  track.innerHTML="";
+  products[i].photos.forEach(src=>{
+    const s=document.createElement("div");
+    s.className="slide";
+    s.innerHTML=`<img src="${src}">`;
+    track.appendChild(s);
   });
-
-  // Overlay с информацией
-  lightbox.on('change', () => {
-    const currIndex = lightbox.pswp.currIndex;
-    const infoEl = document.getElementById('pswp-info');
-    infoEl.innerHTML = `
-      <div class="info-name">${product.name}</div>
-      <div class="info-desc">${product.description}</div>
-      <div class="info-status">${product.status}</div>
-      <div class="info-price">${product.price} ₽</div>
-    `;
-  });
-
-  lightbox.init();
-  lightbox.loadAndOpen(0);
+  gallery.style.display="block";
+  updateInfo(products[i]);
+  resetTransform();
 }
+
+function closeGallery(){
+  gallery.style.display="none";
+}
+
+function updateInfo(p){
+  info.innerHTML=`
+    <div><b>${p.name}</b></div>
+    <div>${p.description}</div>
+    <div>${p.status}</div>
+    <div class="price">${p.price} ₽</div>
+  `;
+}
+
+function resetTransform(){
+  scale=1; x=0; y=0;
+  currentImg().style.transform="translate(0,0) scale(1)";
+  track.style.transform=`translateX(${-index*100}%)`;
+}
+
+function currentImg(){
+  return track.children[index].querySelector("img");
+}
+
+/* Swipe */
+let touchStartX=0;
+viewer.addEventListener("touchstart",e=>{
+  touchStartX=e.touches[0].clientX;
+});
+viewer.addEventListener("touchend",e=>{
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  if(scale===1 && Math.abs(dx)>50){
+    index+=dx<0?1:-1;
+    index=Math.max(0,Math.min(index,track.children.length-1));
+    resetTransform();
+  }
+});
+
+/* Drag */
+viewer.addEventListener("pointerdown",e=>{
+  if(scale===1) return;
+  isPanning=true;
+  startX=e.clientX-x;
+  startY=e.clientY-y;
+});
+viewer.addEventListener("pointermove",e=>{
+  if(!isPanning) return;
+  x=e.clientX-startX;
+  y=e.clientY-startY;
+  currentImg().style.transform=`translate(${x}px,${y}px) scale(${scale})`;
+});
+viewer.addEventListener("pointerup",()=>isPanning=false);
+
+/* Wheel zoom */
+viewer.addEventListener("wheel",e=>{
+  e.preventDefault();
+  scale+=e.deltaY*-0.002;
+  scale=Math.max(1,Math.min(4,scale));
+  currentImg().style.transform=`translate(${x}px,${y}px) scale(${scale})`;
+},{passive:false});
+
+/* Double tap / click */
+let lastTap=0;
+viewer.addEventListener("click",()=>{
+  const now=Date.now();
+  if(now-lastTap<300){
+    scale=scale===1?2.5:1;
+    x=y=0;
+    currentImg().style.transform=`translate(0,0) scale(${scale})`;
+  }
+  lastTap=now;
+});
 </script>
+
 </body>
 </html>
