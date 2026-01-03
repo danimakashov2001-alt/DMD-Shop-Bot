@@ -99,14 +99,34 @@
     margin-left:auto;
   }
 
-  /* Коллаж фото: 1 большое + 3 маленьких */
+  /* ===== Коллаж: 3 фото (без дублей) =====
+     - если фоток >=3: big + 2 small
+     - если 2: 2 равных
+     - если 1: 1 большое
+  */
   .collage{
     display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    grid-auto-rows:72px;
     gap:8px;
     margin-bottom:10px;
   }
+  .collage.three{
+    grid-template-columns:repeat(3, 1fr);
+    grid-auto-rows:78px;
+  }
+  .collage.three .big{
+    grid-column:1 / span 2;
+    grid-row:1 / span 2;
+    height: calc(78px * 2 + 8px);
+  }
+  .collage.two{
+    grid-template-columns:repeat(2, 1fr);
+    grid-auto-rows:160px;
+  }
+  .collage.one{
+    grid-template-columns:1fr;
+    grid-auto-rows:220px;
+  }
+
   .collage .img{
     width:100%;
     height:100%;
@@ -117,14 +137,12 @@
     user-select:none;
     -webkit-user-drag:none;
   }
-  .collage .big{
-    grid-column:1 / span 2;
-    grid-row:1 / span 2;
-    height: calc(72px * 2 + 8px);
-  }
+
   @media (max-width:420px){
-    .collage{ grid-auto-rows:78px; }
-    .collage .big{ height: calc(78px * 2 + 8px); }
+    .collage.three{ grid-auto-rows:82px; }
+    .collage.three .big{ height: calc(82px * 2 + 8px); }
+    .collage.two{ grid-auto-rows:170px; }
+    .collage.one{ grid-auto-rows:240px; }
   }
 
   /* description в ленте */
@@ -165,18 +183,6 @@
   .instock .dot{ background:#38d66b; }
   .inway .dot{ background:#ffd54a; }
 
-  .subline{
-    margin-top:8px;
-    display:flex;
-    align-items:center;
-    gap:8px;
-    color:rgba(255,255,255,0.78);
-    font-size:13px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-
   .is-hidden{ display:none !important; }
   .empty{ padding:14px; color:rgba(255,255,255,0.85); font-size:13px; }
 
@@ -205,7 +211,7 @@
   .hint{ padding:0 14px 14px; color:rgba(255,255,255,0.78); font-size:12px; }
 
   /* =========================================================
-     Caption внутри PhotoSwipe (как у тебя)
+     Caption внутри PhotoSwipe
      ========================================================= */
   .pswp__guru-caption{
     position:absolute;
@@ -396,7 +402,7 @@ const emptyState = document.getElementById("emptyState");
 let currentFilter = null;
 let currentProduct = null;
 
-/* ====== Рендер товаров (НОВЫЙ ВИД ЛЕНТЫ) ====== */
+/* ====== Рендер товаров ====== */
 function renderProducts() {
   catalog.innerHTML = "";
   emptyState.classList.add("is-hidden");
@@ -412,14 +418,14 @@ function renderProducts() {
 
   list.forEach((product) => {
     const stCls = statusClass(product.status);
-    const photos = product.photos || [];
-    const show = photos.slice(0, 4);
+    const photos = Array.isArray(product.photos) ? product.photos : [];
+    const count = photos.length;
 
     const card = document.createElement("div");
     card.className = "card";
     card.__product = product;
 
-    // верхняя строка: название + цена
+    // Top: name + price
     const top = document.createElement("div");
     top.className = "card-top";
     top.innerHTML = `
@@ -428,52 +434,76 @@ function renderProducts() {
     `;
     card.appendChild(top);
 
-    // коллаж
+    // Collage without duplicates
     const collage = document.createElement("div");
-    collage.className = "collage";
 
-    // big (первая фотка)
-    if (show[0]) {
-      const img = document.createElement("img");
-      img.className = "img big";
-      img.src = show[0];
-      img.alt = product.name;
-      img.dataset.open = "1";
-      collage.appendChild(img);
+    if (count >= 3) {
+      collage.className = "collage three";
+      // big + 2 small (первые 3 фото)
+      const big = document.createElement("img");
+      big.className = "img big";
+      big.src = photos[0];
+      big.alt = product.name;
+      big.dataset.open = "1";
+      collage.appendChild(big);
+
+      const s1 = document.createElement("img");
+      s1.className = "img";
+      s1.src = photos[1];
+      s1.alt = product.name;
+      s1.dataset.open = "1";
+      collage.appendChild(s1);
+
+      const s2 = document.createElement("img");
+      s2.className = "img";
+      s2.src = photos[2];
+      s2.alt = product.name;
+      s2.dataset.open = "1";
+      collage.appendChild(s2);
+    } else if (count === 2) {
+      collage.className = "collage two";
+      const i1 = document.createElement("img");
+      i1.className = "img";
+      i1.src = photos[0];
+      i1.alt = product.name;
+      i1.dataset.open = "1";
+      collage.appendChild(i1);
+
+      const i2 = document.createElement("img");
+      i2.className = "img";
+      i2.src = photos[1];
+      i2.alt = product.name;
+      i2.dataset.open = "1";
+      collage.appendChild(i2);
+    } else if (count === 1) {
+      collage.className = "collage one";
+      const i1 = document.createElement("img");
+      i1.className = "img";
+      i1.src = photos[0];
+      i1.alt = product.name;
+      i1.dataset.open = "1";
+      collage.appendChild(i1);
+    } else {
+      // если вообще нет фото — просто пропускаем коллаж
+      collage.className = "collage one";
+      collage.innerHTML = "";
     }
 
-    // 3 маленьких (если фоток меньше — дублируем первую, чтобы коллаж выглядел как на примере)
-    for (let i = 1; i < 4; i++) {
-      const src = show[i] || show[0] || "";
-      const img = document.createElement("img");
-      img.className = "img";
-      img.src = src;
-      img.alt = product.name;
-      img.dataset.open = "1";
-      collage.appendChild(img);
-    }
+    if (count > 0) card.appendChild(collage);
 
-    card.appendChild(collage);
-
-    // описание
+    // description
     const desc = document.createElement("div");
     desc.className = "short-desc";
     desc.textContent = product.description ?? "";
     card.appendChild(desc);
 
-    // meta строка
+    // Status only (категорию убрали)
     const meta = document.createElement("div");
     meta.className = "metaRow";
     meta.innerHTML = `
-      <div>
-        <div class="statusPill ${stCls}">
-          <span class="dot"></span>
-          <span>${product.status ?? ""}</span>
-        </div>
-        <div class="subline">
-          <span>🗂️</span>
-          <span>${product.subcategory ?? ""}</span>
-        </div>
+      <div class="statusPill ${stCls}">
+        <span class="dot"></span>
+        <span>${product.status ?? ""}</span>
       </div>
       <div></div>
     `;
@@ -635,7 +665,7 @@ lightbox.on('afterInit', () => {
 
 lightbox.init();
 
-/* ====== Открытие карточек: по клику на любую фотку в коллаже ====== */
+/* ====== Открытие карточек: по клику на фото ====== */
 catalog.addEventListener("click", (e) => {
   const img = e.target.closest("img[data-open='1']");
   if (!img) return;
@@ -648,13 +678,13 @@ catalog.addEventListener("click", (e) => {
 
   currentProduct = product;
 
-  const items = product.photos.map((src) => ({
+  const items = (product.photos || []).map((src) => ({
     src,
     width: 1600,
     height: 2000
   }));
 
-  // Открываем всегда с 1-й фотки (как раньше). Если хочешь — сделаю открытие с той, на которую нажали.
+  // Открываем с 1-й фотки
   lightbox.loadAndOpen(0, items);
 });
 
