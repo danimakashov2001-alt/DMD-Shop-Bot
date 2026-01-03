@@ -139,6 +139,17 @@
     background:rgba(255,255,255,0.08);
     user-select:none;
     -webkit-user-drag:none;
+
+    /* ✅ Убираем синее выделение/подсветку на мобильных */
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    -webkit-touch-callout: none;
+    outline: none;
+  }
+
+  /* ✅ На случай, если подсветка идёт от фокуса/активации */
+  .collage .img:focus,
+  .collage .img:active{
+    outline:none;
   }
 
   @media (max-width:420px){
@@ -326,10 +337,10 @@ const products = [
 • ✔️ Идeaльный cоcтaв 80% xлoпoк / 20% полиэстер — золотая середина! Хлопок обеспечивает комфорт, полиэстер — прочность и сохранение цвета`,
     subcategory:"zip_hoodies",
     photos:[
-      "https://iili.io/fVQvE5F.jpg",
-      "https://iili.io/fVQU5WG.jpg",
-      "https://iili.io/fVQUMbe.webp",
-      "https://iili.io/fVQUv5P.webp"
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448733/%D0%A1%D0%B5%D1%80%D0%B0%D1%8F_1_uurzdj.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448732/%D0%A1%D0%B5%D1%80%D0%B0%D1%8F_2_xyc09s.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448731/%D0%A1%D0%B5%D1%80%D0%B0%D1%8F_4_kkcqly.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448730/%D0%A1%D0%B5%D1%80%D0%B0%D1%8F_3_dounz3.jpg"
     ]
   },
   {
@@ -346,32 +357,11 @@ const products = [
 • ✔️ Идеальный состав 80% хлопок / 20% полиэстер — золотая середина! Хлопок обеспечивает натуральность, гигроскопичность и комфорт при носке. Полиэстер добавляет ткани прочности, помогает сохранять насыщенный цвет и предотвращает сильную усадку`,
     subcategory:"zip_hoodies",
     photos:[
-      "https://iili.io/fVQ6E4j.webp",
-      "https://iili.io/fVQ6ba4.webp",
-      "https://iili.io/fVQPF6b.webp",
-      "https://iili.io/fVQPuMg.webp",
-      "https://iili.io/fVQP0NI.webp"
-    ]
-  },
-  {
-    name:"Зип худи No Faith Studio boxy crop fit",
-    price:4100,
-    status:"В наличии",
-    description:"Y2K / Opium стиль.",
-    fullDescription:
-`Зип худи No Faith Studio boxy crop fit
-
-• *ЭКСКЛЮЗИВ*
-• ✔️ ЦВЕТ КАК НА ГЛАВНОМ ФОТО
-• ✔️ Укороченные в длине
-• ✔️ Оригинальная комплектация No Faith Studios
-• ✔️ Хлопковый материал
-• ✔️ Унисекс модель`,
-    subcategory:"zip_hoodies",
-    photos:[
-      "https://iili.io/fXB5Ctj.jpg",
-      "https://iili.io/fXqKi8B.webp",
-      "https://iili.io/fXqfRte.webp"
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448735/%D0%A7%D1%91%D1%80%D0%BD%D0%B0%D1%8F_1_zq9soo.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448734/%D0%A7%D1%91%D1%80%D0%BD%D0%B0%D1%8F_3_wkoqkr.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448733/%D0%A7%D1%91%D1%80%D0%BD%D0%B0%D1%8F_2_qphj1p.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448734/%D0%A7%D1%ё%D1%80%D0%BD%D0%B0%D1%8F_4_jqxxme.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448734/%D0%A7%D1%ё%D1%80%D0%BD%D0%B0%D1%8F_4_jqxxme.jpg"
     ]
   },
   {
@@ -389,12 +379,12 @@ const products = [
 • ✔️ Экcклюзив: Это eдинcтвенный лонгслив даннoй мoдели от этогo бpeнда, пpeдcтaвленный в РФ`,
     subcategory:"longsleeves",
     photos:[
-      "https://iili.io/fVQgdrl.webp",
-      "https://iili.io/fVQgbaV.webp",
-      "https://iili.io/fVQrMMb.webp",
-      "https://iili.io/fVQrkDF.webp",
-      "https://iili.io/fVQ4JJ2.webp",
-      "https://iili.io/fVQ4I5B.webp"
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448729/%D0%9B%D0%BE%D0%BD%D0%B3_1_nas66k.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448730/%D0%9B%D0%BE%D0%BD%D0%B3_2_gltmgg.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448729/%D0%9B%D0%BE%D0%BD%D0%B3_3_qhm47n.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448729/%D0%9B%D0%BE%D0%BD%D0%B3_4_epjpgv.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448728/%D0%9B%D0%BE%D0%BD%D0%B3_5_q92inj.jpg",
+      "https://res.cloudinary.com/dlscsqfox/image/upload/v1767448729/%D0%9B%D0%BE%D0%BD%D0%B3_6_gtwfxx.jpg"
     ]
   }
 ];
